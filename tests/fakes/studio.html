@@ -1,0 +1,40 @@
+<!doctype html><html><head><meta charset="utf-8"><title>Fake YouTube Studio</title>
+<style>.step{display:none}.step.on{display:block}tp-yt-paper-radio-button{display:inline-block;padding:4px;border:1px solid #ccc;margin:2px}#textbox{border:1px solid #888;min-height:20px;padding:4px}</style></head>
+<body>
+<ytcp-uploads-dialog>
+ <div id="step1" class="step on">
+  <ytcp-uploads-file-picker><button id="select-files-button">Select files</button><input type="file" id="fileinp"></ytcp-uploads-file-picker>
+  <ytcp-social-suggestions-textbox id="title-textarea"><div id="textbox" contenteditable="true"></div></ytcp-social-suggestions-textbox>
+  <ytcp-social-suggestions-textbox id="description-textarea"><div id="textbox" contenteditable="true"></div></ytcp-social-suggestions-textbox>
+  <tp-yt-paper-radio-button name="VIDEO_MADE_FOR_KIDS_MFK">Yes, it's made for kids</tp-yt-paper-radio-button>
+  <tp-yt-paper-radio-button name="VIDEO_MADE_FOR_KIDS_NOT_MFK">No, it's not made for kids</tp-yt-paper-radio-button>
+  <ytcp-button id="toggle-button"><button>Show more</button></ytcp-button>
+  <div id="more" style="display:none">
+    <ytcp-video-metadata-altered-content>
+      <tp-yt-paper-radio-button name="VIDEO_HAS_ALTERED_CONTENT_YES">Yes</tp-yt-paper-radio-button>
+      <tp-yt-paper-radio-button name="VIDEO_HAS_ALTERED_CONTENT_NO">No</tp-yt-paper-radio-button>
+    </ytcp-video-metadata-altered-content>
+  </div>
+ </div>
+ <div id="step2" class="step">Video elements</div>
+ <div id="step3" class="step">Checks</div>
+ <div id="step4" class="step">
+  <tp-yt-paper-radio-button name="PRIVATE">Private</tp-yt-paper-radio-button>
+  <tp-yt-paper-radio-button name="UNLISTED">Unlisted</tp-yt-paper-radio-button>
+  <tp-yt-paper-radio-button name="PUBLIC">Public</tp-yt-paper-radio-button>
+  <ytcp-video-info><a class="ytcp-video-info" href="https://youtu.be/abcDEF12345">https://youtu.be/abcDEF12345</a></ytcp-video-info>
+ </div>
+ <div id="progress">Uploading 0%</div>
+ <ytcp-button id="next-button" role="button">Next</ytcp-button>
+ <ytcp-button id="done-button" role="button" aria-disabled="true">Done</ytcp-button>
+ <ytcp-button id="close-button" role="button" style="display:none">Close</ytcp-button>
+</ytcp-uploads-dialog>
+<script>
+window.__fake={step:1,file:null,kids:null,altered:null,visibility:null,done:false,closed:false,title:"",desc:""};
+document.getElementById("fileinp").addEventListener("change",e=>{__fake.file=e.target.files[0].name;document.getElementById("progress").textContent="Uploading…";setTimeout(()=>{document.getElementById("done-button").setAttribute("aria-disabled","false");document.getElementById("progress").textContent="Checks complete";},1500);});
+document.querySelectorAll("tp-yt-paper-radio-button").forEach(r=>r.addEventListener("click",()=>{const n=r.getAttribute("name");if(n.startsWith("VIDEO_MADE"))__fake.kids=n;else if(n.includes("ALTERED"))__fake.altered=n;else __fake.visibility=n;}));
+document.querySelector("#toggle-button button").addEventListener("click",()=>{document.getElementById("more").style.display="block";});
+document.getElementById("next-button").addEventListener("click",()=>{document.getElementById("step"+__fake.step).classList.remove("on");__fake.step=Math.min(4,__fake.step+1);document.getElementById("step"+__fake.step).classList.add("on");});
+document.getElementById("done-button").addEventListener("click",()=>{if(document.getElementById("done-button").getAttribute("aria-disabled")==="true")return;__fake.done=true;__fake.title=document.querySelector("#title-textarea #textbox").textContent;__fake.desc=document.querySelector("#description-textarea #textbox").textContent;document.getElementById("close-button").style.display="inline-block";});
+document.getElementById("close-button").addEventListener("click",()=>{__fake.closed=true;});
+</script></body></html>

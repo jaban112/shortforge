@@ -75,8 +75,16 @@ def produce(item: Item, cfg: Config, http, tts: KokoroTTS, log=print) -> Produce
     res = video.render(plate, ass, speech.wav_path, music_wav, total, out_mp4, fps=cfg.fps,
                        music_gain_db=cfg.music_gain_db, log=log)
 
+    thumb = out_mp4.with_suffix(".jpg")
+    try:
+        video.thumbnail(out_mp4, thumb, at=min(1.0, res.seconds / 2))
+    except Exception as e:  # cosmetic only
+        log(f"[thumb] failed: {e}")
+        thumb = None
+
     meta = {
         "item_id": item.id,
+        "thumb": str(thumb) if thumb else None,
         "pack": item.pack,
         "title": script.title,
         "description": script.description,

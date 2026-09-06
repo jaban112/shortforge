@@ -10,6 +10,7 @@
   shortforge ig-refresh              refresh the Instagram long-lived token (workflow runs this daily)
   shortforge stats                   pull view counts + channel stats into ledger, rebuild status page
   shortforge status                  rebuild status page from ledger only
+  shortforge web                     local one-click site (http://127.0.0.1:8787): log in once, schedule, done
 """
 from __future__ import annotations
 
@@ -341,6 +342,16 @@ def cmd_status(args) -> int:
     return 0
 
 
+def cmd_web(args) -> int:
+    """Local one-click site: real Chromium login, built-in scheduler, browser-driven uploads."""
+    cfg = config.load()
+    from .local.app import LocalApp
+
+    app = LocalApp(cfg, port=args.port)
+    app.serve(open_browser=not args.no_open)
+    return 0
+
+
 def cmd_doctor(args) -> int:
     cfg = config.load()
     ok = True
@@ -396,6 +407,7 @@ def main(argv: list[str] | None = None) -> int:
     sub.add_parser("stats").set_defaults(fn=cmd_stats)
     sub.add_parser("status").set_defaults(fn=cmd_status)
     sub.add_parser("doctor").set_defaults(fn=cmd_doctor)
+    w = sub.add_parser("web"); w.add_argument("--port", type=int, default=8787); w.add_argument("--no-open", action="store_true"); w.set_defaults(fn=cmd_web)
     args = ap.parse_args(argv)
     t = time.time()
     rc = args.fn(args)

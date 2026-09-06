@@ -17,7 +17,21 @@ ledger.py  sqlite: items used · videos · uploads · daily stat snapshots · ru
 status.py  status/index.html + status/README.md — uploads, views, exact 90-day view window vs YPP thresholds
 ```
 
-## Zero-terminal setup page
+## One-click local app (`shortforge web`)
+
+`bash install.sh` → http://127.0.0.1:8787. No API keys, no cloud projects: the app starts a real
+Chromium with its own profile (plain `--remote-debugging-port`, nothing that trips Google's
+"browser not secure" check), you sign in to YouTube/Instagram once, and from then on a built-in
+scheduler renders and posts by driving YouTube Studio and instagram.com over CDP
+(`shortforge/local/`). Minimal UI: connection dots, schedule switch + time chips, settings, post
+history with per-platform retry and failure screenshots, thumbnails of rendered videos, live log.
+Failures are screenshot-per-step; the runner posts pending videos first on every run.
+Tested offline against look-alike Studio/Instagram pages (same ids/labels) end-to-end
+(fixture → Kokoro → ffmpeg → fake Studio/IG → ledger), plus CDP attach to a real Chromium process.
+NOT verified against the live sites from the build container (no egress) — the first failure
+screenshot is the calibration input.
+
+## Zero-terminal setup page (API route)
 
 `python web/build.py` → `shortforge-setup.html` (single file, ~1 MB: libsodium inlined + the whole repo embedded as a base64 manifest).
 Open it in Chrome: paste a GitHub PAT → it creates the private repo and pushes every file through the git-data API,
@@ -61,4 +75,4 @@ Exit codes: 0 ok · 1 render failure · 2 missing credentials · 3 nothing unuse
 
 ## Tests
 
-`python -m pytest -q` — 48 tests: license gate, sentence splitter, grounding accept/reject cases, template writer invariants, Commons/OTD/APOD parsers with scripted HTTP, ASS timing, deterministic music, plate composition, real ffmpeg render + ffprobe check, ledger, exact 90-day window math, resumable upload chunking/resume with mocked HTTP, CLI run loop with dedupe.
+`python -m pytest -q` — 56 tests: license gate, sentence splitter, grounding accept/reject cases, template writer invariants, Commons/OTD/APOD parsers with scripted HTTP, ASS timing, deterministic music, plate composition, real ffmpeg render + ffprobe check, ledger, exact 90-day window math, resumable upload chunking/resume with mocked HTTP, CLI run loop with dedupe.

@@ -92,6 +92,13 @@ def render(
     return RenderResult(path=out_mp4, seconds=dur, width=w, height=h)
 
 
+def thumbnail(mp4: Path, out_jpg: Path, at: float = 1.0, width: int = 360) -> Path:
+    """One frame as JPEG (UI preview)."""
+    _run(["ffmpeg", "-y", "-hide_banner", "-loglevel", "error", "-ss", f"{at:.2f}", "-i", str(mp4),
+          "-frames:v", "1", "-vf", f"scale={width}:-2", "-q:v", "4", str(out_jpg)], log=lambda *_: None)
+    return out_jpg
+
+
 def _assert_not_silent(wav: Path) -> None:
     """loudnorm returns NaN on digital silence and the AAC encoder then rejects the frame; fail early with a real message."""
     import soundfile as sf

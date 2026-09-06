@@ -1,0 +1,26 @@
+<!doctype html><html><head><meta charset="utf-8"><title>Fake Instagram</title><style>.hide{display:none}</style></head>
+<body>
+<nav><a href="#" id="create"><svg aria-label="New post" width="24" height="24"><rect width="24" height="24"/></svg><span>Create</span></a></nav>
+<div id="menu" class="hide"><div role="button" id="post-item">Post</div></div>
+<div id="dlg" class="hide" role="dialog">
+  <h2>Create new post</h2>
+  <button id="sel">Select from computer</button><input type="file" id="f" class="hide">
+</div>
+<div id="notice" class="hide"><p>Video posts are now shared as reels</p><button>OK</button></div>
+<div id="crop" class="hide"><button aria-label="Select crop"><svg aria-label="Select crop" width="16" height="16"></svg></button><div id="ratios" class="hide"><span role="button">1:1</span><span role="button">4:5</span><span role="button">9:16</span></div><button id="n1">Next</button></div>
+<div id="edit" class="hide"><p>Edit</p><button id="n2">Next</button></div>
+<div id="cap" class="hide"><div aria-label="Write a caption..." contenteditable="true" role="textbox" id="capbox"></div><div role="button" id="share">Share</div></div>
+<div id="shared" class="hide"><p>Your reel has been shared.</p></div>
+<script>
+window.__fake={file:null,ratio:null,caption:"",shared:false,ok:false};
+const show=(id,on=true)=>document.getElementById(id).classList.toggle("hide",!on);
+document.getElementById("create").addEventListener("click",e=>{e.preventDefault();show("menu");});
+document.getElementById("post-item").addEventListener("click",()=>{show("menu",false);show("dlg");});
+document.getElementById("f").addEventListener("change",e=>{__fake.file=e.target.files[0].name;show("dlg",false);show("notice");});
+document.querySelector("#notice button").addEventListener("click",()=>{__fake.ok=true;show("notice",false);show("crop");});
+document.querySelector("#crop button[aria-label]").addEventListener("click",()=>show("ratios"));
+document.querySelectorAll("#ratios span").forEach(s=>s.addEventListener("click",()=>{__fake.ratio=s.textContent;show("ratios",false);}));
+document.getElementById("n1").addEventListener("click",()=>{show("crop",false);show("edit");});
+document.getElementById("n2").addEventListener("click",()=>{show("edit",false);show("cap");});
+document.getElementById("share").addEventListener("click",()=>{__fake.caption=document.getElementById("capbox").textContent;show("cap",false);setTimeout(()=>{__fake.shared=true;show("shared");},800);});
+</script></body></html>

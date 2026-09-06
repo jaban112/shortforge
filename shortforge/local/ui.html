@@ -1,0 +1,202 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>shortforge</title>
+<style>
+:root{--bg:#fafafa;--card:#fff;--line:#e6e6e6;--fg:#111;--mut:#777;--soft:#f2f2f2;--ok:#16a34a;--bad:#dc2626;--warn:#d97706;--acc:#111}
+@media(prefers-color-scheme:dark){:root{--bg:#0e0e10;--card:#151518;--line:#26262b;--fg:#f2f2f2;--mut:#8b8b93;--soft:#1d1d22;--acc:#f2f2f2}}
+*{box-sizing:border-box}html{-webkit-text-size-adjust:100%}[hidden]{display:none!important}
+body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.5 -apple-system,"Inter",system-ui,"Segoe UI",Roboto,"Noto Sans KR",sans-serif;letter-spacing:-.01em}
+header{display:flex;align-items:center;gap:16px;padding:22px 28px;max-width:1080px;margin:0 auto}
+.brand{font-weight:700;font-size:18px;letter-spacing:-.02em}.brand small{color:var(--mut);font-weight:400;margin-left:8px}
+.pill{display:inline-flex;align-items:center;gap:8px;padding:6px 12px;border:1px solid var(--line);border-radius:999px;font-size:13px;color:var(--mut);background:var(--card)}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--mut)}.dot.ok{background:var(--ok)}.dot.bad{background:var(--bad)}.dot.warn{background:var(--warn)}
+.spacer{flex:1}
+button{font:inherit;border:1px solid var(--line);background:var(--card);color:var(--fg);padding:8px 14px;border-radius:10px;cursor:pointer;transition:.15s}
+button:hover{border-color:var(--fg)}button:disabled{opacity:.4;cursor:default}
+button.primary{background:var(--acc);color:var(--bg);border-color:var(--acc)}button.primary:hover{opacity:.85}
+main{max-width:1080px;margin:0 auto;padding:0 28px 60px}
+.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}@media(max-width:860px){.grid{grid-template-columns:1fr}}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px 20px}
+.card h3{margin:0 0 4px;font-size:14px;font-weight:600;display:flex;align-items:center;gap:8px}
+.card p{margin:0 0 12px;color:var(--mut);font-size:13px}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+label.chk{display:inline-flex;align-items:center;gap:6px;font-size:13px;color:var(--mut);cursor:pointer}
+input[type=checkbox]{accent-color:var(--fg)}
+.switch{position:relative;width:38px;height:22px;background:var(--line);border-radius:999px;cursor:pointer;transition:.15s;flex:none}
+.switch::after{content:"";position:absolute;top:3px;left:3px;width:16px;height:16px;border-radius:50%;background:#fff;transition:.15s;box-shadow:0 1px 2px rgba(0,0,0,.2)}
+.switch.on{background:var(--ok)}.switch.on::after{left:19px}
+.chip{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border:1px solid var(--line);border-radius:999px;font-size:13px;background:var(--soft)}
+.chip b{cursor:pointer;color:var(--mut);font-weight:400}.chip b:hover{color:var(--bad)}
+input[type=time],input[type=text],select{font:inherit;border:1px solid var(--line);border-radius:10px;padding:7px 10px;background:var(--card);color:var(--fg)}
+section{margin-top:22px}
+section h2{font-size:13px;font-weight:600;color:var(--mut);margin:0 0 8px;text-transform:uppercase;letter-spacing:.06em}
+table{width:100%;border-collapse:collapse;font-size:13.5px;background:var(--card);border:1px solid var(--line);border-radius:14px;overflow:hidden}
+th,td{padding:10px 14px;text-align:left;border-bottom:1px solid var(--line);vertical-align:top}th{color:var(--mut);font-weight:500;font-size:12px}tr:last-child td{border-bottom:0}
+td.m{color:var(--mut);white-space:nowrap}a{color:inherit}
+.err{color:var(--bad)}.ok{color:var(--ok)}
+.log{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px 14px;font:12.5px/1.5 ui-monospace,Menlo,Consolas,monospace;color:var(--mut);max-height:280px;overflow:auto;white-space:pre-wrap}
+.settings{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px}
+.settings label{display:block;font-size:12px;color:var(--mut);margin-bottom:4px}.settings input,.settings select{width:100%}
+.shots{display:flex;gap:10px;flex-wrap:wrap}.shots img{width:150px;border:1px solid var(--line);border-radius:8px}
+.toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);background:var(--acc);color:var(--bg);padding:10px 16px;border-radius:12px;font-size:13.5px;opacity:0;transition:.2s;pointer-events:none}
+.toast.show{opacity:1}
+.empty{color:var(--mut);font-size:13.5px;padding:14px;background:var(--card);border:1px dashed var(--line);border-radius:14px}
+.steps{display:flex;gap:10px;flex-wrap:wrap;margin:0 0 16px}.steps div{flex:1;min-width:180px;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px 14px;font-size:13.5px;color:var(--mut)}
+.steps b{display:block;color:var(--fg);font-weight:600;margin-bottom:2px}.steps div.done{opacity:.45}
+.thumb{width:54px;height:96px;object-fit:cover;border-radius:6px;background:var(--soft);display:block}
+button.mini{padding:4px 10px;font-size:12.5px;border-radius:8px}
+.vgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px}
+.vcard{background:var(--card);border:1px solid var(--line);border-radius:12px;overflow:hidden}.vcard img{width:100%;aspect-ratio:9/16;object-fit:cover;display:block;background:var(--soft)}
+.vcard .cap{padding:8px 10px;font-size:12.5px;line-height:1.35}.vcard .cap small{display:block;color:var(--mut);margin-top:3px}
+</style>
+</head>
+<body>
+<header>
+  <div class="brand">shortforge<small>local</small></div>
+  <span class="pill"><span class="dot" id="d-sched"></span><span id="t-sched">자동화 꺼짐</span></span>
+  <span class="pill" id="p-running" hidden><span class="dot warn"></span><span id="t-running">작업 중</span></span>
+  <div class="spacer"></div>
+  <button class="primary" id="b-run">지금 1편 만들어 올리기</button>
+</header>
+<main>
+  <div class="steps" id="steps">
+    <div id="st1"><b>1 · 로그인</b>YouTube / Instagram 버튼을 누르면 브라우저 창이 뜬다. 평소처럼 로그인.</div>
+    <div id="st2"><b>2 · 확인</b>로그인 된 걸 앱이 확인하면 점이 초록으로 바뀐다.</div>
+    <div id="st3"><b>3 · 지금 1편</b>한 편 만들어 올려본다 (5분). 결과가 아래 기록에 뜬다.</div>
+    <div id="st4"><b>4 · 자동화 ON</b>스위치를 켜면 매일 정한 시각에 알아서. 끝.</div>
+  </div>
+  <div class="grid">
+    <div class="card">
+      <h3><span class="dot" id="d-yt"></span>YouTube</h3>
+      <p id="t-yt">로그인 상태 모름</p>
+      <div class="row"><button id="b-login-yt">로그인</button><button id="b-check">확인</button></div>
+    </div>
+    <div class="card">
+      <h3><span class="dot" id="d-ig"></span>Instagram</h3>
+      <p id="t-ig">로그인 상태 모름</p>
+      <div class="row"><button id="b-login-ig">로그인</button><button id="b-check2">확인</button></div>
+    </div>
+    <div class="card">
+      <h3><span class="switch" id="sw"></span>자동화</h3>
+      <p>매일 이 시각에 1편씩. 크롬북이 켜져 있고 이 앱이 떠 있으면 돈다.</p>
+      <div class="row" id="times"></div>
+      <div class="row" style="margin-top:8px"><input type="time" id="t-new" value="09:00"><button id="b-addtime">시각 추가</button></div>
+      <div class="row" style="margin-top:10px">
+        <label class="chk"><input type="checkbox" id="pf-yt" checked>YouTube</label>
+        <label class="chk"><input type="checkbox" id="pf-ig">Instagram</label>
+      </div>
+    </div>
+  </div>
+
+  <section>
+    <h2>설정</h2>
+    <div class="card">
+      <div class="settings">
+        <div><label>소재</label><select id="s-pack"><option value="onthisday">오늘의 역사 (Wikipedia)</option><option value="apod">오늘의 천문 사진 (NASA)</option></select></div>
+        <div><label>공개 범위</label><select id="s-privacy"><option value="public">public</option><option value="unlisted">unlisted</option><option value="private">private</option></select></div>
+        <div><label>채널 이름</label><input type="text" id="s-channel"></div>
+        <div><label>실행당 편수</label><select id="s-n"><option>1</option><option>2</option><option>3</option></select></div>
+        <div><label>목소리</label><select id="s-voice"><option>am_michael</option><option>am_adam</option><option>af_heart</option><option>af_bella</option><option>bm_george</option><option>bf_emma</option></select></div>
+      </div>
+      <div class="row" style="margin-top:12px"><button id="b-save">저장</button></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>게시 기록</h2>
+    <div id="posts"></div>
+  </section>
+
+  <section>
+    <h2>만든 영상 <span id="pendingbar" style="font-weight:400;text-transform:none;letter-spacing:0"></span></h2>
+    <div id="videos"></div>
+  </section>
+
+  <section id="sec-shots" hidden>
+    <h2>실패 스크린샷 (이걸 보내주면 셀렉터를 고친다)</h2>
+    <div class="shots" id="shots"></div>
+  </section>
+
+  <section>
+    <h2>로그</h2>
+    <div class="log" id="log"></div>
+  </section>
+</main>
+<div class="toast" id="toast"></div>
+
+<script>
+const $ = id => document.getElementById(id);
+let S = null;
+const fmt = t => t ? new Date(t * 1000).toLocaleString("ko-KR", {month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit"}) : "—";
+function toast(m) { const t = $("toast"); t.textContent = m; t.classList.add("show"); setTimeout(() => t.classList.remove("show"), 2200); }
+async function api(path, body) {
+  const r = await fetch(path, body ? {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify(body)} : {});
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(j.error || (r.status === 409 ? "이미 작업 중" : "실패 " + r.status));
+  return j;
+}
+function nextSlot(times) {
+  if (!times.length) return null;
+  const now = new Date();
+  const cur = now.getHours() * 60 + now.getMinutes();
+  const mins = times.map(t => parseInt(t.slice(0, 2)) * 60 + parseInt(t.slice(3))).sort((a, b) => a - b);
+  const n = mins.find(m => m > cur);
+  return n === undefined ? times[0] + " (내일)" : mins.indexOf(n) >= 0 ? times[mins.indexOf(n)] : null;
+}
+function shotLink(err) {
+  const m = /\(screenshot .*?([^\/\s]+\.png)\)/.exec(err || "");
+  const txt = (err || "실패").replace(/\s*\(screenshot [^)]*\)/, "").slice(0, 140);
+  return m ? `${txt} <a href="/api/shot/${m[1]}" target="_blank">스크린샷</a>` : txt;
+}
+function render() {
+  const st = S.state, sch = st.schedule, acc = st.accounts;
+  const anyOk = Object.values(acc).some(a => a && a.ok === true);
+  $("st1").classList.toggle("done", anyOk); $("st2").classList.toggle("done", anyOk);
+  $("st3").classList.toggle("done", S.posts.some(p => p.id)); $("st4").classList.toggle("done", !!sch.enabled);
+  $("steps").hidden = anyOk && S.posts.some(p => p.id) && !!sch.enabled;
+  $("sw").classList.toggle("on", !!sch.enabled);
+  $("d-sched").className = "dot " + (sch.enabled ? "ok" : "");
+  $("t-sched").textContent = sch.enabled ? `자동화 켜짐 · 다음 ${nextSlot(sch.times) || "—"}` : "자동화 꺼짐";
+  $("p-running").hidden = !S.running; $("t-running").textContent = S.running === "run" ? "렌더 & 업로드 중" : "확인 중";
+  $("b-run").disabled = !!S.running;
+  for (const [k, d, t] of [["youtube", "d-yt", "t-yt"], ["instagram", "d-ig", "t-ig"]]) {
+    const a = acc[k] || {};
+    $(d).className = "dot " + (a.ok === true ? "ok" : a.ok === false ? "bad" : "");
+    $(t).textContent = a.ok === true ? `로그인됨 · ${fmt(a.checked_at)} 확인` : a.ok === false ? "로그인 안 됨 — 로그인 후 확인" : "로그인 상태 모름 — 확인을 눌러라";
+  }
+  if (document.activeElement !== $("t-new")) {
+    $("times").innerHTML = sch.times.map(t => `<span class="chip">${t}<b data-t="${t}" title="삭제">×</b></span>`).join("") || `<span style="color:var(--mut);font-size:13px">시각 없음</span>`;
+    $("times").querySelectorAll("b").forEach(b => b.onclick = () => saveSchedule({times: sch.times.filter(x => x !== b.dataset.t)}));
+  }
+  $("pf-yt").checked = sch.platforms.includes("youtube"); $("pf-ig").checked = sch.platforms.includes("instagram");
+  if (!render.settingsFilled) {
+    const s = st.settings; $("s-pack").value = s.pack; $("s-privacy").value = s.privacy; $("s-channel").value = s.channel_name; $("s-n").value = s.videos_per_run; $("s-voice").value = s.voice;
+    render.settingsFilled = true;
+  }
+  const titles = Object.fromEntries(S.videos.map(v => [v.key, v.title]));
+  $("posts").innerHTML = S.posts.length ? `<table><tr><th>시각</th><th>플랫폼</th><th>영상</th><th>결과</th></tr>${S.posts.map(p => `<tr><td class="m">${fmt(p.at)}</td><td>${p.platform.replace("-web", "")}</td><td>${titles[p.key] || p.key}</td><td>${p.id ? `<a href="${p.url}" target="_blank" class="ok">${p.id}</a>` : `<span class="err">${shotLink(p.error)}</span> <button class="mini" data-retry="${p.key}|${p.platform}" ${S.running ? "disabled" : ""}>재시도</button>`}</td></tr>`).join("")}</table>` : `<div class="empty">아직 게시한 영상이 없다. 위에서 로그인 → 확인 → "지금 1편".</div>`;
+  $("posts").querySelectorAll("button[data-retry]").forEach(b => b.onclick = async () => { const [key, platform] = b.dataset.retry.split("|"); try { await api("/api/retry", {key, platform}); toast("재시도 시작"); } catch (e) { toast(e.message); } });
+  const npend = Object.values(S.pending || {}).reduce((a, l) => a + l.length, 0);
+  $("pendingbar").innerHTML = npend ? ` · 미게시 ${npend}건 <button class="mini" id="b-pending" ${S.running ? "disabled" : ""}>지금 올리기</button>` : "";
+  if ($("b-pending")) $("b-pending").onclick = async () => { try { await api("/api/pending", {}); toast("미게시분 올리는 중"); } catch (e) { toast(e.message); } };
+  $("videos").innerHTML = S.videos.length ? `<div class="vgrid">${S.videos.map(v => `<div class="vcard">${v.exists ? `<a href="/api/video/${encodeURIComponent(v.key)}" target="_blank">${v.thumb ? `<img src="/api/thumb/${encodeURIComponent(v.key)}" alt="">` : `<div class="thumb" style="width:100%;aspect-ratio:9/16"></div>`}</a>` : `<div style="aspect-ratio:9/16;background:var(--soft)"></div>`}<div class="cap">${v.title.replace(" #Shorts", "")}<small>${v.seconds.toFixed(0)}s · ${fmt(v.at)}${v.exists ? "" : " · 파일 없음"}</small></div></div>`).join("")}</div>` : `<div class="empty">아직 없음.</div>`;
+  $("sec-shots").hidden = !S.shots.length; $("shots").innerHTML = S.shots.map(n => `<a href="/api/shot/${n}" target="_blank"><img src="/api/shot/${n}" alt="${n}"></a>`).join("");
+  const L = $("log"); const atBottom = L.scrollTop + L.clientHeight >= L.scrollHeight - 8; L.textContent = S.logs.join("\n"); if (atBottom) L.scrollTop = L.scrollHeight;
+}
+async function refresh() { try { S = await api("/api/state"); render(); } catch (e) { $("log").textContent = "서버 연결 끊김: " + e.message; } }
+async function saveSchedule(patch) { try { await api("/api/schedule", patch); await refresh(); } catch (e) { toast(e.message); } }
+$("sw").onclick = () => saveSchedule({enabled: !S.state.schedule.enabled});
+$("b-addtime").onclick = () => { const t = $("t-new").value; if (t) saveSchedule({times: [...S.state.schedule.times, t]}); };
+$("pf-yt").onchange = $("pf-ig").onchange = () => saveSchedule({platforms: [$("pf-yt").checked && "youtube", $("pf-ig").checked && "instagram"].filter(Boolean)});
+$("b-run").onclick = async () => { try { await api("/api/run", {}); toast("시작. 5분쯤 걸린다."); await refresh(); } catch (e) { toast(e.message); } };
+$("b-login-yt").onclick = async () => { try { await api("/api/login", {platform: "youtube"}); toast("브라우저 창에서 로그인하고 '확인'"); } catch (e) { toast(e.message); } };
+$("b-login-ig").onclick = async () => { try { await api("/api/login", {platform: "instagram"}); toast("브라우저 창에서 로그인하고 '확인'"); } catch (e) { toast(e.message); } };
+$("b-check").onclick = $("b-check2").onclick = async () => { try { await api("/api/check", {}); toast("확인 중…"); } catch (e) { toast(e.message); } };
+$("b-save").onclick = async () => { try { await api("/api/settings", {pack: $("s-pack").value, privacy: $("s-privacy").value, channel_name: $("s-channel").value, videos_per_run: parseInt($("s-n").value), voice: $("s-voice").value}); toast("저장됨"); } catch (e) { toast(e.message); } };
+refresh(); setInterval(refresh, 3000);
+</script>
+</body>
+</html>
