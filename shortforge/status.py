@@ -80,6 +80,11 @@ def build(ledger: Ledger, out_dir: Path, channel: dict | None = None) -> tuple[P
         for rid, st, fi, pack, ok, note in runs
     )
     subs_txt = f"{subs:,}" if subs is not None else "unknown (run `shortforge stats`)"
+    post_list = ledger.posts()
+    post_rows = "".join(
+        f"<tr><td>{_fmt_ts(t)}</td><td>{html.escape(pl)}</td><td>{html.escape(k)}</td><td>{('<a href=' + chr(39) + html.escape(u or '') + chr(39) + '>' + html.escape(rid) + '</a>') if rid else '<span style=color:#b00>' + html.escape(err or 'failed') + '</span>'}</td></tr>"
+        for k, pl, rid, u, t, err in post_list
+    )
     page = f"""<!doctype html><meta charset=utf-8><title>shortforge status</title>
 <style>body{{font:15px/1.5 system-ui,sans-serif;max-width:1000px;margin:2rem auto;padding:0 1rem;color:#222}}
 table{{border-collapse:collapse;width:100%;margin:1rem 0}}td,th{{border-bottom:1px solid #ddd;padding:.4rem .5rem;text-align:left}}
@@ -97,6 +102,7 @@ table{{border-collapse:collapse;width:100%;margin:1rem 0}}td,th{{border-bottom:1
 (or 4,000 long-form watch hours in 12 months). Fan-funding tier = {FAN_SUBS:,} subscribers AND {FAN_SHORTS_VIEWS_90D:,} Shorts views in 90 days.
 From 2027-02-01 the ad tier Shorts threshold is {YPP_SHORTS_VIEWS_90D_FROM_2027_02:,}. Approval is a YouTube review, not automatic.</p>
 <h2>Uploads</h2><table><tr><th>uploaded</th><th>title</th><th class=n>views</th><th class=n>likes</th><th class=n>comments</th><th>id</th></tr>{''.join(rows_html) or '<tr><td colspan=6>none yet</td></tr>'}</table>
+<h2>Posts by platform</h2><table><tr><th>posted</th><th>platform</th><th>video</th><th>link / error</th></tr>{post_rows or '<tr><td colspan=4>none yet</td></tr>'}</table>
 <h2>Recent runs</h2><table><tr><th>#</th><th>started</th><th>finished</th><th>pack</th><th>result</th><th>note</th></tr>{run_rows or '<tr><td colspan=6>none yet</td></tr>'}</table>
 """
     md = [
@@ -107,6 +113,9 @@ From 2027-02-01 the ad tier Shorts threshold is {YPP_SHORTS_VIEWS_90D_FROM_2027_
         f"- views in last 90 days ({days} days of snapshots): **{v90:,}** / YPP target {target:,}",
         f"- subscribers: **{subs_txt}** / YPP target {YPP_SUBS:,}",
         "", *rows_md, "",
+        "## Posts by platform", "", "| posted | platform | video | link / error |", "|---|---|---|---|",
+        *[f"| {_fmt_ts(t)} | {pl} | {k} | {('[' + rid + '](' + (u or '') + ')') if rid else 'FAILED: ' + str(err or '').replace('|', '/')[:120]} |" for k, pl, rid, u, t, err in post_list],
+        "",
         "## Recent runs", "", "| # | started | finished | pack | result | note |", "|---|---|---|---|---|---|",
         *[f"| {rid} | {_fmt_ts(st)} | {_fmt_ts(fi)} | {pack} | {'ok' if ok else ('FAIL' if ok is not None else 'running')} | {str(note or '').replace('|', '/')} |" for rid, st, fi, pack, ok, note in runs],
     ]

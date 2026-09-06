@@ -45,7 +45,7 @@ def test_cli_uploadpost_fanout(cfg, monkeypatch, tmp_path):
     from shortforge.ledger import Ledger
     from shortforge.upload import uploadpost as upm
 
-    cfg.uploader = "uploadpost"
+    cfg.uploaders = ["uploadpost"]
     cfg.uploadpost_api_key = "k"
     cfg.uploadpost_users = ["main", "second"]
     cfg.uploadpost_platforms = ["youtube", "tiktok"]
@@ -67,15 +67,15 @@ def test_cli_uploadpost_fanout(cfg, monkeypatch, tmp_path):
     mp4.write_bytes(b"0")
     L.record_video("k1", mp4, 10.0, {"title": "t"})
     out = cli._upload_one(cfg, L, "k1", mp4, {"title": "t", "description": "d", "tags": ["x"]})
-    assert out == "up:main=r1"
+    assert out == "main=r1"
     assert calls == [("main", ("youtube", "tiktok")), ("second", ("youtube", "tiktok"))]
-    row = L.db.execute("SELECT youtube_id, upload_error FROM videos WHERE video_key='k1'").fetchone()
-    assert row[0] == "up:main=r1" and "second: quota" in row[1]
-    assert L.pending_uploads() == []
+    posts = L.posts()
+    assert posts[0][1] == "uploadpost" and posts[0][2] == "main=r1"
+    assert L.pending_for("uploadpost") == []
 
 
 def test_upload_ready_by_uploader(cfg):
-    cfg.uploader = "uploadpost"
+    cfg.uploaders = ["uploadpost"]
     assert not cfg.upload_ready
     cfg.uploadpost_api_key = "k"
     cfg.uploadpost_users = ["a"]

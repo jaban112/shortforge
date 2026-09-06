@@ -34,6 +34,15 @@ CREATE TABLE IF NOT EXISTS stats (
   views INTEGER, likes INTEGER, comments INTEGER,
   PRIMARY KEY (youtube_id, fetched_at)
 );
+CREATE TABLE IF NOT EXISTS posts (
+  video_key TEXT NOT NULL,
+  platform TEXT NOT NULL,           -- youtube | instagram | uploadpost
+  remote_id TEXT,
+  url TEXT,
+  posted_at REAL,
+  error TEXT,
+  PRIMARY KEY (video_key, platform)
+);
 CREATE TABLE IF NOT EXISTS runs (
   run_id INTEGER PRIMARY KEY AUTOINCREMENT,
   started_at REAL NOT NULL,
@@ -88,6 +97,27 @@ class Ledger:
         return self.db.execute(
             "SELECT video_key, youtube_id, script_json, uploaded_at FROM videos WHERE youtube_id IS NOT NULL ORDER BY uploaded_at DESC"
         ).fetchall()
+
+    # ---- posts (per platform) ----
+    def record_post(self, key: str, platform: str, remote_id: str | None, url: str | None = None, error: str | None = None) -> None:
+        self.db.execute(
+            "INSERT OR REPLACE INTO posts(video_key,platform,remote_id,url,posted_at,error) VALUES(?,?,?,?,?,?)",
+            (key, platform, remote_id, url, time.time() if remote_id else None, error),
+        )
+        if platform == "youtube" and remote_id:
+            self.db.execute("UPDATE videos SET youtube_id=?, uploaded_at=?, upload_error=NULL WHERE video_key=?", (remote_id, time.time(), key))
+        self.db.commit()
+
+    def pending_for(self, platform: str) -> list[tuple[str, str, str]]:
+        """(key, path, script_json) rendered videos with no successful post on `platform`."""
+        return self.db.execute(
+            "SELECT v.video_key, v.path, v.script_json FROM videos v "
+            "LEFT JOIN posts p ON p.video_key=v.video_key AND p.platform=? AND p.remote_id IS NOT NULL "
+            "WHERE p.remote_id IS NULL ORDER BY v.rendered_at", (platform,)
+        ).fetchall()
+
+    def posts(self) -> list[tuple[str, str, str, str, float, str]]:
+        return self.db.execute("SELECT video_key, platform, remote_id, url, posted_at, error FROM posts ORDER BY posted_at DESC").fetchall()
 
     # ---- stats ----
     def record_stats(self, youtube_id: str, views: int, likes: int, comments: int) -> None:

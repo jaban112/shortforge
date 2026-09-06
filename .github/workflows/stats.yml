@@ -20,6 +20,10 @@ jobs:
       YT_CLIENT_ID: ${{ secrets.YT_CLIENT_ID }}
       YT_CLIENT_SECRET: ${{ secrets.YT_CLIENT_SECRET }}
       YT_REFRESH_TOKEN: ${{ secrets.YT_REFRESH_TOKEN }}
+      SHORTFORGE_UPLOADER: ${{ vars.SHORTFORGE_UPLOADER || 'youtube' }}
+      IG_USER_ID: ${{ vars.IG_USER_ID }}
+      IG_ACCESS_TOKEN: ${{ secrets.IG_ACCESS_TOKEN }}
+      IG_TOKEN_KEY: ${{ secrets.IG_TOKEN_KEY }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -29,6 +33,8 @@ jobs:
           python-version: "3.11"
       - run: pip install -e .
       - run: python -m shortforge stats
+      - if: contains(env.SHORTFORGE_UPLOADER, 'instagram')
+        run: python -m shortforge ig-refresh
       - name: Commit
         run: |
           git config user.name "shortforge-bot"

@@ -70,7 +70,14 @@ class Config:
 
     # --- upload ---
     upload: bool = field(default_factory=lambda: _env_bool("SHORTFORGE_UPLOAD", False))
-    uploader: str = field(default_factory=lambda: _env("SHORTFORGE_UPLOADER", "youtube"))  # youtube | uploadpost
+    uploaders: list[str] = field(default_factory=lambda: [u.strip() for u in (_env("SHORTFORGE_UPLOADER", "youtube") or "").split(",") if u.strip()])  # youtube,instagram,uploadpost
+    ig_access_token: str | None = field(default_factory=lambda: _env("IG_ACCESS_TOKEN"))
+    ig_user_id: str | None = field(default_factory=lambda: _env("IG_USER_ID"))
+    ig_token_key: str | None = field(default_factory=lambda: _env("IG_TOKEN_KEY"))
+    ig_token_path: Path = field(default_factory=lambda: Path(_env("IG_TOKEN_PATH", "state/ig_token.enc")))
+    ig_graph_host: str = field(default_factory=lambda: _env("IG_GRAPH_HOST", "graph.instagram.com"))
+    ig_api_version: str = field(default_factory=lambda: _env("IG_API_VERSION", "v26.0"))
+    ig_share_to_feed: bool = field(default_factory=lambda: _env_bool("IG_SHARE_TO_FEED", True))
     uploadpost_api_key: str | None = field(default_factory=lambda: _env("UPLOAD_POST_API_KEY"))
     uploadpost_users: list[str] = field(default_factory=lambda: [u.strip() for u in (_env("UPLOAD_POST_USERS", "") or "").split(",") if u.strip()])
     uploadpost_platforms: list[str] = field(default_factory=lambda: [u.strip() for u in (_env("UPLOAD_POST_PLATFORMS", "youtube") or "").split(",") if u.strip()])
@@ -93,7 +100,7 @@ class Config:
 
     def resolve(self) -> "Config":
         """Make relative paths absolute against root and create directories."""
-        for attr in ("workdir", "outdir", "ledger_path", "models_dir"):
+        for attr in ("workdir", "outdir", "ledger_path", "models_dir", "ig_token_path"):
             p = getattr(self, attr)
             if not p.is_absolute():
                 p = self.root / p
@@ -105,10 +112,30 @@ class Config:
         return self
 
     @property
-    def upload_ready(self) -> bool:
-        if self.uploader == "uploadpost":
+    def uploader(self) -> str:  # backward compat: first uploader
+        return self.uploaders[0] if self.uploaders else "youtube"
+
+    def ready(self, platform: str) -> bool:
+        if platform == "youtube":
+            return bool(self.yt_client_id and self.yt_client_secret and self.yt_refresh_token)
+        if platform == "instagram":
+            return bool(self.ig_user_id and (self.ig_access_token or (self.ig_token_key and self.ig_token_path.exists())))
+        if platform == "uploadpost":
             return bool(self.uploadpost_api_key and self.uploadpost_users and self.uploadpost_platforms)
-        return bool(self.yt_client_id and self.yt_client_secret and self.yt_refresh_token)
+        return False
+
+    def missing(self) -> list[str]:
+        out = []
+        for p in self.uploaders:
+            if not self.ready(p):
+                out.append({"youtube": "youtube: YT_CLIENT_ID / YT_CLIENT_SECRET / YT_REFRESH_TOKEN",
+                            "instagram": "instagram: IG_USER_ID + IG_ACCESS_TOKEN (or IG_TOKEN_KEY + state/ig_token.enc)",
+                            "uploadpost": "uploadpost: UPLOAD_POST_API_KEY / UPLOAD_POST_USERS / UPLOAD_POST_PLATFORMS"}.get(p, f"unknown uploader {p!r}"))
+        return out
+
+    @property
+    def upload_ready(self) -> bool:
+        return bool(self.uploaders) and not self.missing()
 
 
 def load() -> Config:

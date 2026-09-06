@@ -87,3 +87,34 @@ YouTube API 할당량 기본 10,000 units/일, 업로드 1편 = 1,600 → **최�
 4. 끝. 한 편 렌더 → 프로필마다 1회 POST → 각 프로필의 연결된 플랫폼 전부에 게시.
 
 주의: `stats`(조회수·YPP 거리)는 YouTube Data API 전용이라 이 경로에선 안 채워짐 — 조회수는 Upload-Post 대시보드/YouTube Studio에서 본다. 이 어댑터는 그들의 OpenAPI 스펙으로 만들었고 이 컨테이너에선 라이브 호출 못 해봤다(egress 차단). 첫 실행 로그 던져주면 드리프트 잡는다.
+
+---
+
+## 경로 1 확정판: YouTube + Instagram 둘 다 공식 API로 (v1.2)
+
+`SHORTFORGE_UPLOADER=youtube,instagram` — 한 편 렌더 → 두 플랫폼에 각각 게시, 한쪽이 실패해도 다른 쪽은 올라가고 실패분은 다음 실행의 `upload-pending`이 재시도한다.
+
+### YouTube 쪽
+위 1~3번 그대로 (Google Cloud → OAuth 데스크톱 클라이언트 → `shortforge auth`).
+
+### Instagram 쪽 (Meta for Developers, 15분) — 공개 URL 호스팅 불필요
+Instagram의 **resumable upload**를 쓰기 때문에 영상 바이트를 rupload.facebook.com에 직접 밀어넣는다. 어디에도 영상을 호스팅할 필요 없음.
+
+1. **인스타 계정을 프로페셔널로 전환**: 인스타 앱 → 설정 → 계정 유형 및 도구 → 프로페셔널 계정으로 전환 → 크리에이터(무료). 페이스북 페이지 연결은 **필요 없음**(Instagram Login 방식).
+2. https://developers.facebook.com/apps → **앱 만들기** → 사용 사례에서 **"Instagram"**(또는 "Other" → Business) 선택 → 앱 이름 아무거나 → 만들기.
+3. 앱 대시보드 왼쪽 → **Instagram** → **"API setup with Instagram login"** → **1. Generate access tokens** → **Add account** → 네 인스타 계정 로그인·허용 → 그 계정 옆 **Generate token** → 팝업에서 권한 허용 → 토큰 복사. (이게 바로 **60일짜리 long-lived 토큰**이다. 앱은 개발 모드 그대로 두면 됨 — 본인 계정에 올리는 데 앱 심사 불필요.)
+4. 로컬에서:
+   ```bash
+   IG_TOKEN_KEY=$(python3 -c "import secrets;print(secrets.token_urlsafe(32))")   # 아무 긴 문자열
+   echo "IG_TOKEN_KEY=$IG_TOKEN_KEY" >> .env
+   python -m shortforge ig-auth        # 토큰 붙여넣기 → @계정명·IG_USER_ID·쿼터 확인 → env 줄 출력
+   ```
+   출력된 `IG_USER_ID`, `IG_ACCESS_TOKEN`, `IG_TOKEN_KEY`를 `.env`와 GitHub에 넣는다.
+5. GitHub → **Secrets**: `IG_ACCESS_TOKEN`, `IG_TOKEN_KEY` / **Variables**: `IG_USER_ID`, `SHORTFORGE_UPLOADER=youtube,instagram`.
+
+토큰 수명: 60일. 워크플로가 매일 `ig-refresh`를 돌려 50일 미만 남으면 갱신하고, 갱신된 토큰은 `IG_TOKEN_KEY`로 암호화해서 `state/ig_token.enc`에 커밋한다(GitHub Actions는 자기 secret을 못 고치니까). 사람 손 안 탄다. 한도: 계정당 24시간 100편(API 게시 기준).
+
+### 검증 상태
+- YouTube 어댑터: resumable 프로토콜을 모킹 테스트로 검증, 라이브 미검증(여기 egress 차단).
+- Instagram 어댑터: Meta 문서의 컨테이너→rupload→status→publish 4단계를 그대로 구현, 모킹 테스트 7개 통과, 라이브 미검증. 첫 `run --upload` 로그의 `[ig]` 줄을 던져주면 드리프트를 잡는다.
+- 인코딩은 Reels 스펙에 맞춤: H.264 4:2:0, AAC 128k 48kHz, moov 앞(+faststart), edit list 없음(`-use_editlist 0`), 9:16 1080×1920 30fps.

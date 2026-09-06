@@ -9,6 +9,10 @@ writer/    LLM (Anthropic, optional) or template — BOTH pass grounding.check()
 tts/       Kokoro-82M ONNX, per-sentence synthesis → exact caption timing (no alignment guesses)
 render/    plate (licensed photo or procedural) · ASS captions · procedural ambient music · ffmpeg 1080x1920 H.264
 upload/    YouTube Data API v3 resumable upload (containsSyntheticMedia=true), OAuth refresh-token auth, stats
+           Instagram Reels via Instagram API with Instagram Login — resumable upload to rupload.facebook.com (no public URL),
+           60-day token auto-refresh persisted Fernet-encrypted in state/ (GitHub Actions can't rewrite secrets)
+           Upload-Post third-party fan-out (optional). SHORTFORGE_UPLOADER=youtube,instagram posts every video to both;
+           per-platform results in the ledger `posts` table, failures retried by `upload-pending`
 ledger.py  sqlite: items used · videos · uploads · daily stat snapshots · runs  (committed back by the workflow)
 status.py  status/index.html + status/README.md — uploads, views, exact 90-day view window vs YPP thresholds
 ```
@@ -20,7 +24,9 @@ python -m shortforge doctor                     # ffmpeg / model / keys / egress
 python -m shortforge render-fixture fixtures/otd_1620.json   # offline end-to-end sample
 python -m shortforge run [--pack onthisday|apod] [--n 1] [--upload] [--date 2026-09-06]
 python -m shortforge upload-pending [--max N]
-python -m shortforge auth                       # prints YT_REFRESH_TOKEN
+python -m shortforge auth                       # Google OAuth -> prints YT_REFRESH_TOKEN
+python -m shortforge ig-auth                    # validates a Meta dashboard token -> prints IG_USER_ID / IG_ACCESS_TOKEN
+python -m shortforge ig-refresh                 # refresh long-lived IG token when <50 days remain (workflow does this daily)
 python -m shortforge stats                      # snapshot view counts, rebuild status page
 python -m shortforge status
 ```
@@ -46,4 +52,4 @@ Exit codes: 0 ok · 1 render failure · 2 missing credentials · 3 nothing unuse
 
 ## Tests
 
-`python -m pytest -q` — 39 tests: license gate, sentence splitter, grounding accept/reject cases, template writer invariants, Commons/OTD/APOD parsers with scripted HTTP, ASS timing, deterministic music, plate composition, real ffmpeg render + ffprobe check, ledger, exact 90-day window math, resumable upload chunking/resume with mocked HTTP, CLI run loop with dedupe.
+`python -m pytest -q` — 46 tests: license gate, sentence splitter, grounding accept/reject cases, template writer invariants, Commons/OTD/APOD parsers with scripted HTTP, ASS timing, deterministic music, plate composition, real ffmpeg render + ffprobe check, ledger, exact 90-day window math, resumable upload chunking/resume with mocked HTTP, CLI run loop with dedupe.

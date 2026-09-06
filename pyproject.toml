@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "shortforge"
-version = "1.1.0"
+version = "1.2.0"
 description = "Unattended faceless Shorts factory: grounded data -> verified script -> local TTS -> ffmpeg -> YouTube"
 requires-python = ">=3.10"
 dependencies = [
@@ -14,6 +14,7 @@ dependencies = [
     "kokoro-onnx>=0.4",
     "onnxruntime>=1.17",
     "pillow>=10",
+    "cryptography>=41",
 ]
 
 [project.optional-dependencies]

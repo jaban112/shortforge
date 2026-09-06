@@ -53,6 +53,7 @@ def render(
     if shutil.which("ffmpeg") is None:
         raise RuntimeError("ffmpeg not found on PATH")
     out_mp4.parent.mkdir(parents=True, exist_ok=True)
+    _assert_not_silent(voice_wav)
     d = f"{seconds:.3f}"
     # slow push-in: scale grows linearly with t, crop back to 1080x1920 (centered)
     vf = (
@@ -77,8 +78,8 @@ def render(
     cmd += ["-filter_complex", af, "-map", "0:v", "-map", "[a]",
             "-vf", vf,
             "-c:v", "libx264", "-preset", "medium", "-crf", "20", "-r", str(fps),
-            "-c:a", "aac", "-b:a", "192k", "-ar", "48000",
-            "-t", d, "-movflags", "+faststart", str(out_mp4)]
+            "-c:a", "aac", "-b:a", "128k", "-ar", "48000",
+            "-t", d, "-movflags", "+faststart+negative_cts_offsets", "-use_editlist", "0", str(out_mp4)]
     _run(cmd, log)
     info = probe(out_mp4)
     v = next(s for s in info["streams"] if s["codec_type"] == "video")
@@ -89,6 +90,16 @@ def render(
     if abs(dur - seconds) > 0.5:
         raise RuntimeError(f"rendered duration {dur:.2f}s, expected {seconds:.2f}s")
     return RenderResult(path=out_mp4, seconds=dur, width=w, height=h)
+
+
+def _assert_not_silent(wav: Path) -> None:
+    """loudnorm returns NaN on digital silence and the AAC encoder then rejects the frame; fail early with a real message."""
+    import soundfile as sf
+    import numpy as np
+
+    data, _ = sf.read(str(wav), dtype="float32")
+    if data.size == 0 or float(np.max(np.abs(data))) == 0.0:
+        raise RuntimeError(f"voice track {wav} is silent — TTS produced no audio")
 
 
 def _ass_escape(p: Path) -> str:

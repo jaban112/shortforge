@@ -38,7 +38,10 @@ jobs:
       YT_CLIENT_ID: ${{ secrets.YT_CLIENT_ID }}
       YT_CLIENT_SECRET: ${{ secrets.YT_CLIENT_SECRET }}
       YT_REFRESH_TOKEN: ${{ secrets.YT_REFRESH_TOKEN }}
-      SHORTFORGE_UPLOADER: ${{ vars.SHORTFORGE_UPLOADER || 'youtube' }}
+      SHORTFORGE_UPLOADER: ${{ vars.SHORTFORGE_UPLOADER || 'youtube' }}   # e.g. youtube,instagram
+      IG_USER_ID: ${{ vars.IG_USER_ID }}
+      IG_ACCESS_TOKEN: ${{ secrets.IG_ACCESS_TOKEN }}
+      IG_TOKEN_KEY: ${{ secrets.IG_TOKEN_KEY }}
       UPLOAD_POST_API_KEY: ${{ secrets.UPLOAD_POST_API_KEY }}
       UPLOAD_POST_USERS: ${{ vars.UPLOAD_POST_USERS }}
       UPLOAD_POST_PLATFORMS: ${{ vars.UPLOAD_POST_PLATFORMS || 'youtube' }}
@@ -72,9 +75,17 @@ jobs:
       - name: Doctor
         run: python -m shortforge doctor || true
 
+      - name: Refresh Instagram token if needed
+        if: contains(env.SHORTFORGE_UPLOADER, 'instagram')
+        run: python -m shortforge ig-refresh
+
       - name: Run (render + upload)
         id: run
         run: python -m shortforge run
+
+      - name: Retry any platform that failed earlier
+        if: always()
+        run: python -m shortforge upload-pending || true
 
       - name: Stats + status page
         if: always()
