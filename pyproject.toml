@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "shortforge"
-version = "1.0.0"
+version = "1.1.0"
 description = "Unattended faceless Shorts factory: grounded data -> verified script -> local TTS -> ffmpeg -> YouTube"
 requires-python = ">=3.10"
 dependencies = [
