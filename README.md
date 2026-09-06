@@ -17,6 +17,15 @@ ledger.py  sqlite: items used · videos · uploads · daily stat snapshots · ru
 status.py  status/index.html + status/README.md — uploads, views, exact 90-day view window vs YPP thresholds
 ```
 
+## Zero-terminal setup page
+
+`python web/build.py` → `shortforge-setup.html` (single file, ~1 MB: libsodium inlined + the whole repo embedded as a base64 manifest).
+Open it in Chrome: paste a GitHub PAT → it creates the private repo and pushes every file through the git-data API,
+walks you through Google OAuth (desktop-client loopback + paste-the-URL, exchange done in-browser) and the Meta token,
+seals secrets with the repo public key (sealed box, done client-side), sets variables, dispatches the workflow and renders
+`status/README.md`. Tested end-to-end in headless Chromium from `file://` against a mock GitHub/Google/Instagram API
+(`tests/test_web_setup.py`: secrets are decrypted with PyNaCl and compared).
+
 ## Commands
 
 ```
@@ -52,4 +61,4 @@ Exit codes: 0 ok · 1 render failure · 2 missing credentials · 3 nothing unuse
 
 ## Tests
 
-`python -m pytest -q` — 46 tests: license gate, sentence splitter, grounding accept/reject cases, template writer invariants, Commons/OTD/APOD parsers with scripted HTTP, ASS timing, deterministic music, plate composition, real ffmpeg render + ffprobe check, ledger, exact 90-day window math, resumable upload chunking/resume with mocked HTTP, CLI run loop with dedupe.
+`python -m pytest -q` — 48 tests: license gate, sentence splitter, grounding accept/reject cases, template writer invariants, Commons/OTD/APOD parsers with scripted HTTP, ASS timing, deterministic music, plate composition, real ffmpeg render + ffprobe check, ledger, exact 90-day window math, resumable upload chunking/resume with mocked HTTP, CLI run loop with dedupe.

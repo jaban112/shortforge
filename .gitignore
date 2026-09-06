@@ -6,3 +6,6 @@ __pycache__/
 *.pyc
 *.egg-info/
 .pytest_cache/
+shortforge-setup.html
+web/.build/
+web/sodium.bundle.js

@@ -1,5 +1,10 @@
 # SETUP — 30분 안에 무인 가동까지
 
+> **가장 쉬운 길: `shortforge-setup.html` 하나를 크롬에서 열어라.** (`python web/build.py`로 생성, 배포 zip에 동봉)
+> GitHub 토큰 붙여넣기 → repo 생성·코드 푸시 → Google 로그인 → Instagram 토큰 → "지금 1편" 버튼. 터미널 0회.
+> 이 페이지는 서버가 없다: 브라우저가 api.github.com / oauth2.googleapis.com / graph.instagram.com 을 직접 호출하고, secrets 는 repo 공개키로 브라우저 안에서 봉인(libsodium sealed box)해서 올린다.
+> 아래 CLI 절차는 같은 일을 손으로 하는 버전이다.
+
 순서대로. 전부 네 손으로만 가능한 것들이고(계정·키), 그 뒤로는 GitHub Actions가 알아서 돈다.
 
 ## 0. 이게 뭘 하는지 (30초)

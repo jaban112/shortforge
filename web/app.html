@@ -1,0 +1,408 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>shortforge — 세팅 & 컨트롤</title>
+<style>
+:root{--bg:#0f1115;--panel:#171a21;--line:#2a2f3a;--fg:#e8eaf0;--mut:#9aa3b2;--acc:#f5c842;--ok:#3ddc84;--bad:#ff5c5c;--warn:#ffb347;--code:#0b0d11}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.55 system-ui,-apple-system,"Segoe UI",Roboto,"Noto Sans KR",sans-serif}
+header{padding:28px 24px 12px;max-width:980px;margin:0 auto}h1{margin:0;font-size:26px;letter-spacing:.3px}h1 span{color:var(--acc)}
+header p{color:var(--mut);margin:6px 0 0}
+main{max-width:980px;margin:0 auto;padding:0 24px 80px}
+section{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:18px 20px;margin:16px 0}
+section h2{margin:0 0 6px;font-size:18px;display:flex;align-items:center;gap:10px}
+.chip{font-size:12px;padding:2px 9px;border-radius:999px;border:1px solid var(--line);color:var(--mut)}
+.chip.ok{border-color:var(--ok);color:var(--ok)}.chip.bad{border-color:var(--bad);color:var(--bad)}.chip.warn{border-color:var(--warn);color:var(--warn)}
+.help{color:var(--mut);font-size:13.5px;margin:0 0 12px}
+label{display:block;font-size:13px;color:var(--mut);margin:10px 0 4px}
+input,select,textarea{width:100%;background:var(--code);color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:9px 11px;font:inherit}
+textarea{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:13px}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:12px}@media(max-width:700px){.row{grid-template-columns:1fr}}
+button{background:var(--acc);color:#111;border:0;border-radius:8px;padding:9px 14px;font:inherit;font-weight:600;cursor:pointer;margin:10px 8px 0 0}
+button.sec{background:transparent;color:var(--fg);border:1px solid var(--line)}button:disabled{opacity:.45;cursor:not-allowed}
+.log{background:var(--code);border:1px solid var(--line);border-radius:8px;padding:10px 12px;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12.5px;white-space:pre-wrap;max-height:260px;overflow:auto;margin-top:10px;color:#cfd5e1}
+.log .ok{color:var(--ok)}.log .bad{color:var(--bad)}.log .warn{color:var(--warn)}
+a{color:var(--acc)}code{background:var(--code);padding:1px 5px;border-radius:4px;font-size:13px}
+ol{padding-left:20px;margin:6px 0}li{margin:3px 0}
+.kv{display:grid;grid-template-columns:auto 1fr;gap:4px 14px;font-size:14px}.kv b{color:var(--mut);font-weight:500}
+details{margin-top:8px}summary{cursor:pointer;color:var(--mut)}
+table{border-collapse:collapse;width:100%;font-size:13.5px;margin-top:8px}td,th{border-bottom:1px solid var(--line);padding:6px 8px;text-align:left}
+.warnbox{border:1px solid var(--warn);border-radius:8px;padding:10px 12px;color:var(--warn);font-size:13.5px;margin-top:8px}
+</style>
+</head>
+<body>
+<header>
+  <h1><span>shortforge</span> 세팅 &amp; 컨트롤</h1>
+  <p>이 파일 하나로 GitHub repo 생성 → 코드 푸시 → YouTube/Instagram 연결 → 무인 가동. 터미널 없음. 키는 네 브라우저와 네 GitHub secrets에만 간다 — 이 페이지는 서버가 없다.</p>
+</header>
+<main>
+
+<section id="s-gh">
+  <h2>1. GitHub <span class="chip" id="c-gh">미연결</span></h2>
+  <p class="help">토큰: <a href="https://github.com/settings/tokens/new?scopes=repo,workflow&description=shortforge" target="_blank" rel="noopener">github.com/settings/tokens/new</a> (classic, scopes <code>repo</code> + <code>workflow</code>) → Generate → 붙여넣기.</p>
+  <div class="row">
+    <div><label>Personal access token</label><input id="gh-token" type="password" placeholder="ghp_…" autocomplete="off"></div>
+    <div><label>repo 이름 (없으면 새로 만든다)</label><input id="gh-repo" value="shortforge"></div>
+  </div>
+  <label><input type="checkbox" id="gh-remember" style="width:auto;margin-right:6px">이 브라우저에 토큰 기억 (localStorage — 공용 PC면 끄기)</label>
+  <button id="gh-connect">연결 &amp; repo 준비</button>
+  <button class="sec" id="gh-push" disabled>코드 푸시 (<span id="gh-nfiles">0</span>개 파일, v<span id="gh-ver"></span>)</button>
+  <div class="log" id="gh-log">대기</div>
+</section>
+
+<section id="s-yt">
+  <h2>2. YouTube <span class="chip" id="c-yt">미연결</span></h2>
+  <p class="help">Google Cloud에서 OAuth 클라이언트(<b>데스크톱 앱</b>) 하나만 만들면 된다. 아래 순서대로, 5분.</p>
+  <details><summary>클릭 순서 펼치기</summary><ol>
+    <li><a href="https://console.cloud.google.com/projectcreate" target="_blank" rel="noopener">새 프로젝트</a> 만들기 (이름 아무거나)</li>
+    <li><a href="https://console.cloud.google.com/apis/library/youtube.googleapis.com" target="_blank" rel="noopener">YouTube Data API v3</a> → 사용 설정</li>
+    <li><a href="https://console.cloud.google.com/apis/credentials/consent" target="_blank" rel="noopener">OAuth 동의 화면</a> → 외부 → 앱 이름·이메일 → 저장 → <b>"앱 게시(프로덕션)"</b> 버튼 누르기 ← 안 누르면 토큰이 7일마다 죽음</li>
+    <li><a href="https://console.cloud.google.com/apis/credentials/oauthclient" target="_blank" rel="noopener">사용자 인증 정보 만들기</a> → OAuth 클라이언트 ID → <b>데스크톱 앱</b> → 클라이언트 ID / 보안 비밀번호 복사</li>
+  </ol></details>
+  <div class="row">
+    <div><label>Client ID</label><input id="yt-cid" placeholder="…apps.googleusercontent.com"></div>
+    <div><label>Client secret</label><input id="yt-csec" type="password" placeholder="GOCSPX-…" autocomplete="off"></div>
+  </div>
+  <button id="yt-open">Google 로그인 창 열기</button>
+  <label>로그인 끝나면 브라우저가 <code>http://127.0.0.1:8765/?code=…</code> 로 가면서 "연결할 수 없음"이 뜬다 — 정상. 그 주소창 전체를 복사해서 여기 붙여넣기:</label>
+  <input id="yt-redirect" placeholder="http://127.0.0.1:8765/?state=…&code=…&scope=…">
+  <button id="yt-exchange" disabled>토큰 받기 &amp; 채널 확인</button>
+  <button class="sec" id="yt-save" disabled>GitHub secrets에 저장</button>
+  <div class="log" id="yt-log">대기</div>
+</section>
+
+<section id="s-ig">
+  <h2>3. Instagram <span class="chip" id="c-ig">선택</span></h2>
+  <p class="help">공개 URL 호스팅 필요 없음(resumable upload). 계정을 프로페셔널로 바꾸고 Meta 앱에서 토큰 버튼 한 번.</p>
+  <details><summary>클릭 순서 펼치기</summary><ol>
+    <li>인스타 앱 → 설정 → 계정 유형 및 도구 → <b>프로페셔널 계정으로 전환</b> → 크리에이터</li>
+    <li><a href="https://developers.facebook.com/apps/creation/" target="_blank" rel="noopener">Meta 앱 만들기</a> → 사용 사례 "Instagram" (없으면 Other → Business)</li>
+    <li>앱 대시보드 → Instagram → <b>API setup with Instagram login</b> → Generate access tokens → Add account → 로그인·허용 → <b>Generate token</b> → 복사</li>
+  </ol></details>
+  <label>Access token (60일짜리 long-lived)</label>
+  <input id="ig-token" type="password" placeholder="IGAA…" autocomplete="off">
+  <button id="ig-check">계정 확인</button>
+  <button class="sec" id="ig-save" disabled>GitHub secrets에 저장</button>
+  <div class="log" id="ig-log">대기</div>
+</section>
+
+<section id="s-cfg">
+  <h2>4. 설정 <span class="chip" id="c-cfg">기본값</span></h2>
+  <div class="row">
+    <div><label>채널 이름 (영상 설명에 들어감)</label><input id="cfg-channel" value="Today in History"></div>
+    <div><label>소재 팩</label><select id="cfg-pack"><option value="onthisday">onthisday — Wikipedia 오늘의 역사</option><option value="apod">apod — NASA 오늘의 천문 사진</option></select></div>
+    <div><label>공개 범위</label><select id="cfg-privacy"><option value="public">public</option><option value="unlisted">unlisted (처음 몇 편 눈으로 확인용)</option><option value="private">private</option></select></div>
+    <div><label>실행당 편수 (하루 2회 실행 · YouTube 한도 6편/일)</label><select id="cfg-n"><option>1</option><option>2</option><option>3</option></select></div>
+    <div><label>목소리 (Kokoro)</label><select id="cfg-voice"><option>am_michael</option><option>am_adam</option><option>af_heart</option><option>af_bella</option><option>bm_george</option><option>bf_emma</option></select></div>
+    <div><label>Anthropic API 키 (선택 — 없으면 출처 문장 그대로 쓰는 템플릿 작가)</label><input id="cfg-anthropic" type="password" placeholder="sk-ant-… (비워도 됨)" autocomplete="off"></div>
+  </div>
+  <button id="cfg-save" disabled>GitHub에 저장</button>
+  <div class="log" id="cfg-log">대기</div>
+</section>
+
+<section id="s-run">
+  <h2>5. 가동 <span class="chip" id="c-run">—</span></h2>
+  <p class="help">"지금 1편" 누르면 GitHub Actions가 렌더+업로드 (5~8분). 그 뒤로는 매일 13:00·22:00 UTC(한국 22:00·07:00)에 자동. 이 페이지를 닫아도 돈다.</p>
+  <button id="run-now" disabled>지금 1편 만들어 올리기</button>
+  <button class="sec" id="run-refresh" disabled>상태 새로고침</button>
+  <div class="kv" id="run-kv" style="margin-top:10px"></div>
+  <div id="run-status"></div>
+  <div class="log" id="run-log">대기</div>
+</section>
+
+<section>
+  <h2>정직한 한 줄</h2>
+  <p class="help">돈은 YouTube 파트너 승인(구독 1,000 + 90일 Shorts 조회 1,000만; 2027-02부터 2,000만) 뒤에만 들어오고, 승인은 사람 심사다. 2025-07 정책이 "합성음성+고정공식" 채널을 걸러낸다. 이 파이프라인의 출처 표기·매일 다른 소재·검증된 사실은 그걸 피하려는 설계지 보장이 아니다.</p>
+</section>
+</main>
+
+<script>/*__SODIUM__*/</script>
+<script>
+const MANIFEST = /*__MANIFEST__*/{};
+const VERSION = "/*__VERSION__*/";
+const API = new URLSearchParams(location.search).get("api") || "https://api.github.com";
+const GOOGLE_AUTH = "https://accounts.google.com/o/oauth2/v2/auth";
+const GOOGLE_TOKEN = new URLSearchParams(location.search).get("gtoken") || "https://oauth2.googleapis.com/token";
+const YT_API = new URLSearchParams(location.search).get("ytapi") || "https://www.googleapis.com/youtube/v3";
+const IG_API = new URLSearchParams(location.search).get("igapi") || "https://graph.instagram.com/v26.0";
+const REDIRECT = "http://127.0.0.1:8765";
+const SCOPES = "https://www.googleapis.com/auth/youtube.upload https://www.googleapis.com/auth/youtube.readonly";
+
+const $ = (id) => document.getElementById(id);
+const state = { owner: null, repo: null, branch: "main", token: null, yt: null, ig: null };
+
+function log(id, msg, cls) {
+  const el = $(id);
+  const line = document.createElement("div");
+  if (cls) line.className = cls;
+  line.textContent = msg;
+  if (el.textContent === "대기") el.textContent = "";
+  el.appendChild(line);
+  el.scrollTop = el.scrollHeight;
+}
+function chip(id, text, cls) { const c = $(id); c.textContent = text; c.className = "chip " + (cls || ""); }
+function b64(bytes) { let s = ""; for (const b of bytes) s += String.fromCharCode(b); return btoa(s); }
+function randomState() { const a = new Uint8Array(16); crypto.getRandomValues(a); return Array.from(a, x => x.toString(16).padStart(2, "0")).join(""); }
+function randomKey() { const a = new Uint8Array(32); crypto.getRandomValues(a); return b64(a).replace(/[+/=]/g, "").slice(0, 40); }
+
+// ---------- GitHub ----------
+async function gh(method, path, body, raw) {
+  const r = await fetch(API + path, {
+    method,
+    headers: { Authorization: "Bearer " + state.token, Accept: "application/vnd.github+json", "X-GitHub-Api-Version": "2022-11-28", ...(body ? { "Content-Type": "application/json" } : {}) },
+    body: body ? JSON.stringify(body) : undefined,
+  });
+  if (raw) return r;
+  const text = await r.text();
+  let data = null; try { data = text ? JSON.parse(text) : null; } catch { data = { raw: text }; }
+  if (!r.ok) { const e = new Error(`${method} ${path} → ${r.status} ${data && data.message ? data.message : text.slice(0, 200)}`); e.status = r.status; e.data = data; throw e; }
+  return data;
+}
+
+async function ghConnect() {
+  state.token = $("gh-token").value.trim();
+  const repo = $("gh-repo").value.trim() || "shortforge";
+  if (!state.token) return log("gh-log", "토큰을 넣어라", "bad");
+  try {
+    const me = await gh("GET", "/user");
+    state.owner = me.login;
+    log("gh-log", `로그인: ${me.login}`, "ok");
+    let r;
+    try {
+      r = await gh("GET", `/repos/${me.login}/${repo}`);
+      log("gh-log", `repo 있음: ${r.full_name} (${r.private ? "private" : "PUBLIC — private 권장"})`, r.private ? "ok" : "warn");
+    } catch (e) {
+      if (e.status !== 404) throw e;
+      r = await gh("POST", "/user/repos", { name: repo, private: true, auto_init: true, description: "shortforge — unattended sourced Shorts factory" });
+      log("gh-log", `repo 생성: ${r.full_name} (private)`, "ok");
+      await new Promise(res => setTimeout(res, 1500));
+    }
+    state.repo = r.name; state.branch = r.default_branch || "main";
+    try {
+      await gh("PUT", `/repos/${state.owner}/${state.repo}/actions/permissions/workflow`, { default_workflow_permissions: "write", can_approve_pull_request_reviews: false });
+      log("gh-log", "Actions 쓰기 권한 ON (원장 커밋용)", "ok");
+    } catch (e) { log("gh-log", "Actions 권한 설정 실패 — Settings → Actions → Workflow permissions → Read and write 수동으로: " + e.message, "warn"); }
+    if ($("gh-remember").checked) localStorage.setItem("sf.gh", JSON.stringify({ token: state.token, repo })); else localStorage.removeItem("sf.gh");
+    chip("c-gh", `${state.owner}/${state.repo}`, "ok");
+    ["gh-push", "yt-save", "ig-save", "cfg-save", "run-now", "run-refresh"].forEach(id => $(id).disabled = false);
+    await refreshStatus();
+  } catch (e) { log("gh-log", e.message, "bad"); chip("c-gh", "실패", "bad"); }
+}
+
+async function ghPush() {
+  const files = Object.keys(MANIFEST);
+  $("gh-push").disabled = true;
+  try {
+    const ref = await gh("GET", `/repos/${state.owner}/${state.repo}/git/ref/heads/${state.branch}`);
+    const baseSha = ref.object.sha;
+    const baseCommit = await gh("GET", `/repos/${state.owner}/${state.repo}/git/commits/${baseSha}`);
+    log("gh-log", `기준 커밋 ${baseSha.slice(0, 7)}; blob ${files.length}개 업로드…`);
+    const tree = [];
+    let done = 0;
+    const queue = files.slice();
+    async function worker() {
+      while (queue.length) {
+        const path = queue.shift();
+        const blob = await gh("POST", `/repos/${state.owner}/${state.repo}/git/blobs`, { content: MANIFEST[path], encoding: "base64" });
+        tree.push({ path, mode: "100644", type: "blob", sha: blob.sha });
+        done++;
+        if (done % 10 === 0) log("gh-log", `  ${done}/${files.length}`);
+      }
+    }
+    await Promise.all([worker(), worker(), worker(), worker(), worker(), worker()]);
+    const newTree = await gh("POST", `/repos/${state.owner}/${state.repo}/git/trees`, { base_tree: baseCommit.tree.sha, tree });
+    const commit = await gh("POST", `/repos/${state.owner}/${state.repo}/git/commits`, { message: `shortforge v${VERSION} (pushed from setup page)`, tree: newTree.sha, parents: [baseSha] });
+    await gh("PATCH", `/repos/${state.owner}/${state.repo}/git/refs/heads/${state.branch}`, { sha: commit.sha, force: false });
+    log("gh-log", `푸시 완료: ${commit.sha.slice(0, 7)} — https://github.com/${state.owner}/${state.repo}`, "ok");
+  } catch (e) { log("gh-log", "푸시 실패: " + e.message, "bad"); }
+  $("gh-push").disabled = false;
+}
+
+let _pubkey = null;
+async function setSecret(name, value) {
+  const sodium = await window.sodiumReady;
+  if (!_pubkey) _pubkey = await gh("GET", `/repos/${state.owner}/${state.repo}/actions/secrets/public-key`);
+  const key = sodium.from_base64(_pubkey.key, sodium.base64_variants.ORIGINAL);
+  const sealed = sodium.crypto_box_seal(sodium.from_string(value), key);
+  await gh("PUT", `/repos/${state.owner}/${state.repo}/actions/secrets/${name}`, { encrypted_value: sodium.to_base64(sealed, sodium.base64_variants.ORIGINAL), key_id: _pubkey.key_id });
+}
+async function setVariable(name, value) {
+  try { await gh("POST", `/repos/${state.owner}/${state.repo}/actions/variables`, { name, value }); }
+  catch (e) { if (e.status === 409) await gh("PATCH", `/repos/${state.owner}/${state.repo}/actions/variables/${name}`, { name, value }); else throw e; }
+}
+async function getVariables() {
+  const out = {};
+  try { const v = await gh("GET", `/repos/${state.owner}/${state.repo}/actions/variables?per_page=100`); for (const x of v.variables || []) out[x.name] = x.value; } catch {}
+  return out;
+}
+async function uploaderVar() {
+  const cur = (await getVariables()).SHORTFORGE_UPLOADER || "";
+  const set = new Set(cur.split(",").map(s => s.trim()).filter(Boolean));
+  return set;
+}
+
+// ---------- YouTube ----------
+function ytOpen() {
+  const cid = $("yt-cid").value.trim();
+  if (!cid) return log("yt-log", "Client ID를 넣어라", "bad");
+  const st = randomState(); sessionStorage.setItem("sf.ytstate", st);
+  const q = new URLSearchParams({ client_id: cid, redirect_uri: REDIRECT, response_type: "code", scope: SCOPES, access_type: "offline", prompt: "consent", state: st, include_granted_scopes: "true" });
+  window.open(GOOGLE_AUTH + "?" + q.toString(), "_blank", "noopener");
+  log("yt-log", "로그인 창 열림. 승인 후 주소창 URL을 아래에 붙여넣기.");
+  $("yt-exchange").disabled = false;
+}
+async function ytExchange() {
+  const cid = $("yt-cid").value.trim(), csec = $("yt-csec").value.trim();
+  const url = $("yt-redirect").value.trim();
+  let code, st;
+  if (/^1\/\/[A-Za-z0-9_\-]+$/.test(url)) {  // bare refresh token pasted (curl fallback)
+    state.yt = { cid, csec, refresh: url, access: null };
+    try {
+      const t = await fetch(GOOGLE_TOKEN, { method: "POST", headers: { "Content-Type": "application/x-www-form-urlencoded" }, body: new URLSearchParams({ refresh_token: url, client_id: cid, client_secret: csec, grant_type: "refresh_token" }) });
+      const tj = await t.json(); state.yt.access = tj.access_token;
+    } catch {}
+    log("yt-log", "refresh token 수동 입력됨" + (state.yt.access ? "" : " (채널 확인은 건너뜀)"), "ok");
+    chip("c-yt", "토큰 입력됨", "ok"); if (state.repo) $("yt-save").disabled = false; localStorage.setItem("sf.ytcid", cid);
+    return;
+  }
+  try { const u = new URL(url); code = u.searchParams.get("code"); st = u.searchParams.get("state"); } catch { return log("yt-log", "URL 형식이 아니다", "bad"); }
+  if (!code) return log("yt-log", "URL에 code=가 없다", "bad");
+  if (st !== sessionStorage.getItem("sf.ytstate")) return log("yt-log", "state 불일치 — 로그인 창을 다시 열어서 처음부터", "bad");
+  try {
+    let r;
+    const form = new URLSearchParams({ code, client_id: cid, client_secret: csec, redirect_uri: REDIRECT, grant_type: "authorization_code" });
+    try {
+      r = await fetch(GOOGLE_TOKEN, { method: "POST", headers: { "Content-Type": "application/x-www-form-urlencoded" }, body: form });
+    } catch (netErr) {
+      log("yt-log", "브라우저가 Google 토큰 서버 호출을 막았다(CORS). 우회: 아래 한 줄을 크롬북 터미널에 붙여넣고 나온 JSON의 refresh_token 을 여기 붙여넣기:", "warn");
+      log("yt-log", `curl -s -X POST ${GOOGLE_TOKEN} -d '${form.toString()}'`);
+      $("yt-redirect").placeholder = "여기에 refresh_token 값만 붙여넣고 다시 '토큰 받기'";
+      throw new Error("CORS 차단 — 위 curl 우회 사용");
+    }
+    const j = await r.json();
+    if (!r.ok) throw new Error(`token ${r.status}: ${j.error} ${j.error_description || ""}`);
+    if (!j.refresh_token) throw new Error("refresh_token이 없다 — myaccount.google.com/permissions 에서 앱 권한 삭제 후 다시");
+    state.yt = { cid, csec, refresh: j.refresh_token, access: j.access_token };
+    log("yt-log", "refresh token 확보", "ok");
+    const ch = await fetch(`${YT_API}/channels?part=snippet,statistics&mine=true`, { headers: { Authorization: "Bearer " + j.access_token } });
+    const cj = await ch.json();
+    if (!ch.ok) throw new Error(`channels.list ${ch.status}: ${(cj.error || {}).message || ""}`);
+    const c = (cj.items || [])[0];
+    if (!c) throw new Error("이 구글 계정에 채널이 없다 — youtube.com에서 채널부터 만들어라");
+    log("yt-log", `채널: ${c.snippet.title} (구독 ${c.statistics.subscriberCount}, 영상 ${c.statistics.videoCount})`, "ok");
+    chip("c-yt", c.snippet.title, "ok");
+    if (state.repo) $("yt-save").disabled = false;
+    localStorage.setItem("sf.ytcid", cid);
+  } catch (e) { log("yt-log", e.message, "bad"); chip("c-yt", "실패", "bad"); }
+}
+async function ytSave() {
+  if (!state.yt) return log("yt-log", "먼저 토큰을 받아라", "bad");
+  try {
+    await setSecret("YT_CLIENT_ID", state.yt.cid);
+    await setSecret("YT_CLIENT_SECRET", state.yt.csec);
+    await setSecret("YT_REFRESH_TOKEN", state.yt.refresh);
+    const up = await uploaderVar(); up.add("youtube");
+    await setVariable("SHORTFORGE_UPLOADER", Array.from(up).join(","));
+    log("yt-log", `secrets 3개 저장 + SHORTFORGE_UPLOADER=${Array.from(up).join(",")}`, "ok");
+  } catch (e) { log("yt-log", "저장 실패: " + e.message, "bad"); }
+}
+
+// ---------- Instagram ----------
+async function igCheck() {
+  const tok = $("ig-token").value.trim();
+  if (!tok) return log("ig-log", "토큰을 넣어라", "bad");
+  try {
+    const r = await fetch(`${IG_API}/me?fields=id,username,account_type&access_token=${encodeURIComponent(tok)}`);
+    const j = await r.json();
+    if (!r.ok) throw new Error(`me ${r.status}: ${(j.error || {}).message || ""}`);
+    const pro = ["BUSINESS", "MEDIA_CREATOR", "CREATOR"].includes(j.account_type);
+    log("ig-log", `@${j.username} id=${j.id} type=${j.account_type}${pro ? "" : " — 프로페셔널 계정이 아니다: 게시 거부됨"}`, pro ? "ok" : "warn");
+    let quota = "";
+    try {
+      const q = await fetch(`${IG_API}/${j.id}/content_publishing_limit?fields=quota_usage,config&access_token=${encodeURIComponent(tok)}`);
+      const qj = await q.json();
+      const d = ((qj.data || [])[0]) || {};
+      quota = `24h 게시 ${d.quota_usage ?? "?"}/${(d.config || {}).quota_total ?? 100}`;
+      log("ig-log", quota, "ok");
+    } catch {}
+    state.ig = { token: tok, id: String(j.id), username: j.username };
+    chip("c-ig", "@" + j.username, "ok");
+    if (state.repo) $("ig-save").disabled = false;
+  } catch (e) { log("ig-log", e.message, "bad"); chip("c-ig", "실패", "bad"); }
+}
+async function igSave() {
+  if (!state.ig) return log("ig-log", "먼저 계정 확인", "bad");
+  try {
+    let key = localStorage.getItem("sf.igkey"); if (!key) { key = randomKey(); localStorage.setItem("sf.igkey", key); }
+    await setSecret("IG_ACCESS_TOKEN", state.ig.token);
+    await setSecret("IG_TOKEN_KEY", key);
+    await setVariable("IG_USER_ID", state.ig.id);
+    const up = await uploaderVar(); up.add("instagram");
+    await setVariable("SHORTFORGE_UPLOADER", Array.from(up).join(","));
+    log("ig-log", `secrets 2개 + IG_USER_ID 저장, SHORTFORGE_UPLOADER=${Array.from(up).join(",")}. 토큰은 워크플로가 60일마다 자동 갱신.`, "ok");
+  } catch (e) { log("ig-log", "저장 실패: " + e.message, "bad"); }
+}
+
+// ---------- settings ----------
+async function cfgSave() {
+  try {
+    await setVariable("SHORTFORGE_CHANNEL_NAME", $("cfg-channel").value.trim() || "Today in History");
+    await setVariable("SHORTFORGE_PACK", $("cfg-pack").value);
+    await setVariable("SHORTFORGE_PRIVACY", $("cfg-privacy").value);
+    await setVariable("SHORTFORGE_VIDEOS_PER_RUN", $("cfg-n").value);
+    await setVariable("SHORTFORGE_VOICE", $("cfg-voice").value);
+    const ak = $("cfg-anthropic").value.trim();
+    if (ak) { await setSecret("ANTHROPIC_API_KEY", ak); log("cfg-log", "ANTHROPIC_API_KEY 저장 (LLM 작가 ON, grounding gate 적용)", "ok"); }
+    log("cfg-log", "variables 5개 저장", "ok"); chip("c-cfg", "저장됨", "ok");
+    localStorage.setItem("sf.cfg", JSON.stringify({ channel: $("cfg-channel").value, pack: $("cfg-pack").value, privacy: $("cfg-privacy").value, n: $("cfg-n").value, voice: $("cfg-voice").value }));
+  } catch (e) { log("cfg-log", "저장 실패: " + e.message, "bad"); }
+}
+
+// ---------- run / status ----------
+async function runNow() {
+  try {
+    const vars = await getVariables();
+    if (!vars.SHORTFORGE_UPLOADER) { log("run-log", "업로더가 하나도 저장 안 됨 — 2번 또는 3번에서 'GitHub secrets에 저장' 먼저", "bad"); return; }
+    const r = await gh("POST", `/repos/${state.owner}/${state.repo}/actions/workflows/daily.yml/dispatches`, { ref: state.branch, inputs: { pack: vars.SHORTFORGE_PACK || $("cfg-pack").value, n: vars.SHORTFORGE_VIDEOS_PER_RUN || "1", upload: "true" } }, true);
+    if (r.status !== 204) { const t = await r.text(); throw new Error(`dispatch ${r.status}: ${t.slice(0, 200)} — 코드를 아직 안 푸시했으면 1번의 '코드 푸시' 먼저`); }
+    log("run-log", "실행 요청됨. 5~8분 뒤 상태 새로고침.", "ok"); chip("c-run", "실행 중", "warn");
+    setTimeout(refreshStatus, 8000);
+  } catch (e) { log("run-log", e.message, "bad"); }
+}
+async function refreshStatus() {
+  if (!state.repo) return;
+  try {
+    const runs = await gh("GET", `/repos/${state.owner}/${state.repo}/actions/runs?per_page=5`);
+    const rows = (runs.workflow_runs || []).map(w => `<tr><td>${w.name}</td><td>${w.status}${w.conclusion ? " / " + w.conclusion : ""}</td><td>${new Date(w.created_at).toLocaleString()}</td><td><a href="${w.html_url}" target="_blank" rel="noopener">로그</a></td></tr>`).join("");
+    const last = (runs.workflow_runs || [])[0];
+    if (last) chip("c-run", last.conclusion || last.status, last.conclusion === "success" ? "ok" : (last.conclusion === "failure" ? "bad" : "warn"));
+    let md = "";
+    try { const f = await gh("GET", `/repos/${state.owner}/${state.repo}/contents/status/README.md?ref=${state.branch}`); md = decodeURIComponent(escape(atob(f.content.replace(/\n/g, "")))); } catch {}
+    const kv = {};
+    for (const m of md.matchAll(/^- (.+?): \*\*(.+?)\*\*/gm)) kv[m[1]] = m[2];
+    $("run-kv").innerHTML = Object.entries(kv).map(([k, v]) => `<b>${k}</b><span>${v}</span>`).join("") || "<b>상태</b><span>아직 실행 전</span>";
+    $("run-status").innerHTML = rows ? `<table><tr><th>워크플로</th><th>상태</th><th>시각</th><th></th></tr>${rows}</table>` : "";
+    const posts = md.split("## Posts by platform")[1];
+    if (posts) { const lines = posts.split("\n").filter(l => l.startsWith("| ") && !l.startsWith("| posted") && !l.startsWith("|---")).slice(0, 10); if (lines.length) log("run-log", "최근 게시:\n" + lines.join("\n")); }
+  } catch (e) { log("run-log", "상태 조회 실패: " + e.message, "bad"); }
+}
+
+// ---------- boot ----------
+(function boot() {
+  $("gh-nfiles").textContent = Object.keys(MANIFEST).length; $("gh-ver").textContent = VERSION;
+  try {
+    const g = JSON.parse(localStorage.getItem("sf.gh") || "null"); if (g) { $("gh-token").value = g.token; $("gh-repo").value = g.repo; $("gh-remember").checked = true; }
+    const cid = localStorage.getItem("sf.ytcid"); if (cid) $("yt-cid").value = cid;
+    const c = JSON.parse(localStorage.getItem("sf.cfg") || "null"); if (c) { $("cfg-channel").value = c.channel; $("cfg-pack").value = c.pack; $("cfg-privacy").value = c.privacy; $("cfg-n").value = c.n; $("cfg-voice").value = c.voice; }
+  } catch {}
+  $("gh-connect").onclick = ghConnect; $("gh-push").onclick = ghPush;
+  $("yt-open").onclick = ytOpen; $("yt-exchange").onclick = ytExchange; $("yt-save").onclick = ytSave;
+  $("ig-check").onclick = igCheck; $("ig-save").onclick = igSave;
+  $("cfg-save").onclick = cfgSave; $("run-now").onclick = runNow; $("run-refresh").onclick = refreshStatus;
+  if (!window.sodiumReady) log("gh-log", "암호화 라이브러리 로드 실패 — 파일이 깨졌다", "bad");
+  window.__sf = { state, ghConnect, ghPush, setSecret, setVariable, ytExchange, igCheck, igSave, cfgSave, runNow, refreshStatus };
+})();
+</script>
+</body>
+</html>
