@@ -1,0 +1,12 @@
+{
+  "id": "otd:09-06:1620:fixture01",
+  "pack": "onthisday",
+  "title": "Mayflower",
+  "source_text": "The Pilgrims set sail from Plymouth, England, aboard the Mayflower.\n\nMayflower was an English sailing ship that transported a group of English families, known today as the Pilgrims, from England to the New World in 1620. After 10 weeks at sea, Mayflower, with 102 passengers and a crew of about 30, reached what is today the United States, dropping anchor near the tip of Cape Cod, Massachusetts, on November 21, 1620. Differing from their contemporaries, the Pilgrims chose to establish a new settlement outside of the jurisdiction of the Virginia Company, resulting in the Mayflower Compact. The ship was probably built in Harwich, Essex. The colonists who remained in Plymouth Colony endured a brutal winter in which about half of them died.",
+  "source_url": "https://en.wikipedia.org/wiki/Mayflower",
+  "source_label": "Wikipedia",
+  "year": 1620,
+  "date_label": "September 6",
+  "image": null,
+  "extra": {"event_text": "The Pilgrims set sail from Plymouth, England, aboard the Mayflower."}
+}

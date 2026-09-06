@@ -1,0 +1,15 @@
+# systemd user unit for running shortforge on your own machine instead of GitHub Actions.
+#   mkdir -p ~/.config/systemd/user && cp ops/shortforge.* ~/.config/systemd/user/
+#   systemctl --user daemon-reload && systemctl --user enable --now shortforge.timer
+#   journalctl --user -u shortforge -f
+[Unit]
+Description=shortforge: render + upload one Short
+After=network-online.target
+
+[Service]
+Type=oneshot
+WorkingDirectory=%h/shortforge
+EnvironmentFile=%h/shortforge/.env
+ExecStart=/usr/bin/env python3 -m shortforge run --upload
+ExecStartPost=/usr/bin/env python3 -m shortforge stats
+Nice=10

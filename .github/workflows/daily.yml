@@ -1,0 +1,102 @@
+name: shortforge daily
+
+on:
+  schedule:
+    # two uploads a day (UTC). videos.insert = 1,600 quota units; default quota 10,000/day -> max 6.
+    - cron: "0 13 * * *"
+    - cron: "0 22 * * *"
+  workflow_dispatch:
+    inputs:
+      pack:
+        description: "source pack (onthisday | apod)"
+        default: "onthisday"
+      n:
+        description: "videos to render this run"
+        default: "1"
+      upload:
+        description: "upload to YouTube (true/false)"
+        default: "true"
+
+concurrency:
+  group: shortforge-run
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      SHORTFORGE_PACK: ${{ github.event.inputs.pack || vars.SHORTFORGE_PACK || 'onthisday' }}
+      SHORTFORGE_VIDEOS_PER_RUN: ${{ github.event.inputs.n || vars.SHORTFORGE_VIDEOS_PER_RUN || '1' }}
+      SHORTFORGE_UPLOAD: ${{ github.event.inputs.upload || 'true' }}
+      SHORTFORGE_CHANNEL_NAME: ${{ vars.SHORTFORGE_CHANNEL_NAME || 'Today in History' }}
+      SHORTFORGE_VOICE: ${{ vars.SHORTFORGE_VOICE || 'am_michael' }}
+      SHORTFORGE_PRIVACY: ${{ vars.SHORTFORGE_PRIVACY || 'public' }}
+      YT_CLIENT_ID: ${{ secrets.YT_CLIENT_ID }}
+      YT_CLIENT_SECRET: ${{ secrets.YT_CLIENT_SECRET }}
+      YT_REFRESH_TOKEN: ${{ secrets.YT_REFRESH_TOKEN }}
+      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+      NASA_API_KEY: ${{ secrets.NASA_API_KEY || 'DEMO_KEY' }}
+      SHORTFORGE_MODELS: ${{ github.workspace }}/models
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: System deps (ffmpeg + fonts)
+        run: |
+          sudo apt-get update -q
+          sudo apt-get install -y -q ffmpeg fonts-dejavu-core
+
+      - name: Cache TTS model (~350 MB)
+        uses: actions/cache@v4
+        with:
+          path: models
+          key: kokoro-onnx-v1.0
+
+      - name: Install
+        run: pip install -e .
+
+      - name: Doctor
+        run: python -m shortforge doctor || true
+
+      - name: Run (render + upload)
+        id: run
+        run: python -m shortforge run
+
+      - name: Stats + status page
+        if: always()
+        run: python -m shortforge stats || python -m shortforge status
+
+      - name: Keep the rendered videos as an artifact (7 days)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: videos-${{ github.run_id }}
+          path: |
+            out/*.mp4
+            out/*.json
+          retention-days: 7
+          if-no-files-found: ignore
+
+      - name: Commit ledger + status back
+        if: always()
+        run: |
+          git config user.name "shortforge-bot"
+          git config user.email "shortforge-bot@users.noreply.github.com"
+          git add state status
+          if git diff --cached --quiet; then echo "nothing to commit"; exit 0; fi
+          git commit -m "shortforge: run ${{ github.run_id }} [skip ci]"
+          for i in 1 2 3 4 5; do
+            git pull --rebase && git push && exit 0
+            sleep $((i * 5))
+          done
+          exit 1
