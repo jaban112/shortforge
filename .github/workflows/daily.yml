@@ -38,6 +38,10 @@ jobs:
       YT_CLIENT_ID: ${{ secrets.YT_CLIENT_ID }}
       YT_CLIENT_SECRET: ${{ secrets.YT_CLIENT_SECRET }}
       YT_REFRESH_TOKEN: ${{ secrets.YT_REFRESH_TOKEN }}
+      SHORTFORGE_UPLOADER: ${{ vars.SHORTFORGE_UPLOADER || 'youtube' }}
+      UPLOAD_POST_API_KEY: ${{ secrets.UPLOAD_POST_API_KEY }}
+      UPLOAD_POST_USERS: ${{ vars.UPLOAD_POST_USERS }}
+      UPLOAD_POST_PLATFORMS: ${{ vars.UPLOAD_POST_PLATFORMS || 'youtube' }}
       ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
       NASA_API_KEY: ${{ secrets.NASA_API_KEY || 'DEMO_KEY' }}
       SHORTFORGE_MODELS: ${{ github.workspace }}/models

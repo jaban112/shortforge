@@ -70,6 +70,11 @@ class Config:
 
     # --- upload ---
     upload: bool = field(default_factory=lambda: _env_bool("SHORTFORGE_UPLOAD", False))
+    uploader: str = field(default_factory=lambda: _env("SHORTFORGE_UPLOADER", "youtube"))  # youtube | uploadpost
+    uploadpost_api_key: str | None = field(default_factory=lambda: _env("UPLOAD_POST_API_KEY"))
+    uploadpost_users: list[str] = field(default_factory=lambda: [u.strip() for u in (_env("UPLOAD_POST_USERS", "") or "").split(",") if u.strip()])
+    uploadpost_platforms: list[str] = field(default_factory=lambda: [u.strip() for u in (_env("UPLOAD_POST_PLATFORMS", "youtube") or "").split(",") if u.strip()])
+    uploadpost_header: str = field(default_factory=lambda: _env("UPLOAD_POST_HEADER_SCHEME", "Apikey"))
     yt_client_id: str | None = field(default_factory=lambda: _env("YT_CLIENT_ID"))
     yt_client_secret: str | None = field(default_factory=lambda: _env("YT_CLIENT_SECRET"))
     yt_refresh_token: str | None = field(default_factory=lambda: _env("YT_REFRESH_TOKEN"))
@@ -101,6 +106,8 @@ class Config:
 
     @property
     def upload_ready(self) -> bool:
+        if self.uploader == "uploadpost":
+            return bool(self.uploadpost_api_key and self.uploadpost_users and self.uploadpost_platforms)
         return bool(self.yt_client_id and self.yt_client_secret and self.yt_refresh_token)
 
 

@@ -69,7 +69,7 @@ def build(ledger: Ledger, out_dir: Path, channel: dict | None = None) -> tuple[P
     for key, yid, sj, up_at in uploaded:
         s = json.loads(sj)
         v, l, c, _ = latest.get(yid, (0, 0, 0, 0))
-        url = f"https://youtube.com/shorts/{yid}"
+        url = f"https://youtube.com/shorts/{yid}" if not yid.startswith("up:") else "https://app.upload-post.com/"
         rows_html.append(
             f"<tr><td>{_fmt_ts(up_at)}</td><td>{html.escape(s['title'])}</td><td class=n>{v:,}</td><td class=n>{l:,}</td><td class=n>{c:,}</td><td><a href='{url}'>{yid}</a></td></tr>"
         )

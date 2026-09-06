@@ -74,3 +74,16 @@ YouTube API 할당량 기본 10,000 units/일, 업로드 1편 = 1,600 → **최�
 - **돈은 YPP 승인 뒤에만 들어온다.** 광고 수익 티어 = 구독 1,000 + 90일 Shorts 조회 1,000만(2027-02-01부터 2,000만). 팬펀딩 티어 = 구독 500 + 300만. 승인은 사람 심사고, 2025-07부터 "템플릿 양산·합성음성+스톡영상 고정공식" 채널은 **inauthentic content**로 거절된다. 이 설계가 출처 표기·매일 다른 소재·검증된 사실로 그 판정을 피하려는 것이지, 피한다는 보장은 없다.
 - Shorts RPM은 낮다(광고 수익 분배 45%). 조회 1,000만이 채워질 정도 채널이면 월 수십만 원대가 현실적 출발점이고, 그 이상은 롱폼·제휴·스폰서로 넘어가야 한다. 이 코드는 그 다음 단계의 토대(원장·업로더·검증 파이프라인)까지 포함한다.
 - 이 컨테이너에서는 Wikimedia/Google 네트워크가 막혀 있어 **API 라이브 호출은 미검증**이다. 오프라인 픽스처로 렌더 전 과정은 검증했고(실제 mp4 생성·프레임 확인), API 응답 파서는 문서화된 응답 형태로 테스트했다. `python -m shortforge doctor`가 네 환경에서 진짜 egress를 확인해준다.
+
+---
+
+## 대안 경로: Google Cloud 없이 (Upload-Post)
+
+`SHORTFORGE_UPLOADER=uploadpost`로 바꾸면 2번(Google Cloud)·3번(auth) 단계가 통째로 사라진다.
+
+1. https://upload-post.com 가입 → API 키 복사 (무료 10편/월, 유료 ~$16/월~)
+2. 대시보드에서 **프로필**(예: `main`) 만들고 그 안에 YouTube 채널 연결 — "Google로 로그인 → 허용" 클릭이 전부. 같은 프로필에 TikTok·Instagram·Facebook도 붙일 수 있음. 채널 세트가 더 있으면 프로필을 더 만들면 됨(`second`, `third`…)
+3. GitHub → Secrets: `UPLOAD_POST_API_KEY` / Variables: `SHORTFORGE_UPLOADER=uploadpost`, `UPLOAD_POST_USERS=main,second`, `UPLOAD_POST_PLATFORMS=youtube,tiktok,instagram`
+4. 끝. 한 편 렌더 → 프로필마다 1회 POST → 각 프로필의 연결된 플랫폼 전부에 게시.
+
+주의: `stats`(조회수·YPP 거리)는 YouTube Data API 전용이라 이 경로에선 안 채워짐 — 조회수는 Upload-Post 대시보드/YouTube Studio에서 본다. 이 어댑터는 그들의 OpenAPI 스펙으로 만들었고 이 컨테이너에선 라이브 호출 못 해봤다(egress 차단). 첫 실행 로그 던져주면 드리프트 잡는다.

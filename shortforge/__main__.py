@@ -31,6 +31,8 @@ def log(msg: str) -> None:
 
 
 def _upload_one(cfg, ledger: Ledger, key: str, mp4: Path, meta: dict) -> str | None:
+    if cfg.uploader == "uploadpost":
+        return _upload_one_uploadpost(cfg, ledger, key, mp4, meta)
     from .upload import YouTube
 
     yt = YouTube(cfg.yt_client_id, cfg.yt_client_secret, cfg.yt_refresh_token, log=log)
@@ -43,6 +45,30 @@ def _upload_one(cfg, ledger: Ledger, key: str, mp4: Path, meta: dict) -> str | N
         ledger.record_upload(key, None, error=str(e)[:500])
         log(f"[yt] upload FAILED for {mp4.name}: {e}")
         return None
+
+
+def _upload_one_uploadpost(cfg, ledger: Ledger, key: str, mp4: Path, meta: dict) -> str | None:
+    """One POST per Upload-Post profile; each profile fans out to its connected platforms.
+    Ledger id = 'up:' + comma-joined '<user>=<request_id>' so stats (YouTube-only) skip it."""
+    from .upload.uploadpost import UploadPost
+
+    up = UploadPost(cfg.uploadpost_api_key, cfg.uploadpost_header, log=log)
+    ids: list[str] = []
+    errors: list[str] = []
+    for user in cfg.uploadpost_users:
+        try:
+            res = up.upload(mp4, user, cfg.uploadpost_platforms, meta["title"], meta["description"],
+                            meta.get("tags") or _tags_from(meta), privacy=cfg.yt_privacy,
+                            category_id=cfg.yt_category_id, synthetic=True)
+            ids.append(f"{user}={res.request_id or 'ok'}")
+        except Exception as e:
+            errors.append(f"{user}: {str(e)[:160]}")
+            log(f"[upload-post] FAILED for {user}: {e}")
+    if ids:
+        ledger.record_upload(key, "up:" + ",".join(ids), error=("; ".join(errors) or None))
+        return "up:" + ",".join(ids)
+    ledger.record_upload(key, None, error="; ".join(errors)[:500])
+    return None
 
 
 def _tags_from(meta: dict) -> list[str]:
@@ -63,7 +89,7 @@ def cmd_run(args) -> int:
     if args.upload:
         cfg.upload = True
     if cfg.upload and not cfg.upload_ready:
-        log("upload requested but YT_CLIENT_ID / YT_CLIENT_SECRET / YT_REFRESH_TOKEN are not all set")
+        log("upload requested but credentials are incomplete: " + ("UPLOAD_POST_API_KEY / UPLOAD_POST_USERS / UPLOAD_POST_PLATFORMS" if cfg.uploader == "uploadpost" else "YT_CLIENT_ID / YT_CLIENT_SECRET / YT_REFRESH_TOKEN"))
         return 2
     day = dt.date.fromisoformat(args.date) if args.date else dt.date.today()
     ledger = Ledger(cfg.ledger_path)
@@ -175,7 +201,7 @@ def cmd_stats(args) -> int:
         from .upload import YouTube
 
         yt = YouTube(cfg.yt_client_id, cfg.yt_client_secret, cfg.yt_refresh_token, log=log)
-        ids = [yid for _, yid, _, _ in ledger.uploaded()]
+        ids = [yid for _, yid, _, _ in ledger.uploaded() if not yid.startswith("up:")]
         if ids:
             for yid, s in yt.video_stats(ids).items():
                 ledger.record_stats(yid, s["views"], s["likes"], s["comments"])
@@ -219,18 +245,19 @@ def cmd_doctor(args) -> int:
     m = cfg.models_dir / "kokoro-v1.0.onnx"
     line(m.exists() and m.stat().st_size > 300_000_000, f"TTS model present at {m} (auto-downloads on first run if missing)")
     line(cfg.pack in PACKS, f"pack {cfg.pack!r} exists ({sorted(PACKS)})")
-    line(cfg.upload_ready or not cfg.upload, "YouTube credentials " + ("set" if cfg.upload_ready else "NOT set (upload disabled)"))
+    line(cfg.upload_ready or not cfg.upload, f"uploader={cfg.uploader}: credentials " + ("set" if cfg.upload_ready else "NOT set (upload disabled)"))
     log(("  --  " if cfg.anthropic_api_key else "  --  ") + ("ANTHROPIC_API_KEY set: LLM writer on (grounding-gated)" if cfg.anthropic_api_key else "ANTHROPIC_API_KEY not set: template writer (verbatim source sentences)"))
     http = Http(cfg.user_agent, timeout=10, retries=1)
     for name, url in (("wikimedia feed", "https://api.wikimedia.org/feed/v1/wikipedia/en/onthisday/selected/01/01"),
                       ("commons api", "https://commons.wikimedia.org/w/api.php?action=query&format=json&meta=siteinfo"),
                       ("nasa apod", f"https://api.nasa.gov/planetary/apod?api_key={cfg.nasa_api_key}&date=2020-01-01"),
-                      ("google oauth", "https://oauth2.googleapis.com/tokeninfo?access_token=x")):
+                      ("google oauth", "https://oauth2.googleapis.com/tokeninfo?access_token=x"),
+                      ("upload-post", "https://api.upload-post.com/api/uploadposts/history")):
         try:
             http._get(url, headers={"Api-User-Agent": cfg.user_agent})
             line(True, f"egress: {name}")
         except Exception as e:
-            good = "tokeninfo" in url and "400" in str(e)  # 400 from tokeninfo == reachable
+            good = ("tokeninfo" in url and "400" in str(e)) or ("upload-post" in url and ("401" in str(e) or "403" in str(e)))  # auth error == reachable
             line(good, f"egress: {name} ({str(e)[:80]})")
     log("doctor: " + ("all good" if ok else "problems above"))
     return 0 if ok else 1

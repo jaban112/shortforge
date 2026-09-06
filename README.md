@@ -46,4 +46,4 @@ Exit codes: 0 ok · 1 render failure · 2 missing credentials · 3 nothing unuse
 
 ## Tests
 
-`python -m pytest -q` — 36 tests: license gate, sentence splitter, grounding accept/reject cases, template writer invariants, Commons/OTD/APOD parsers with scripted HTTP, ASS timing, deterministic music, plate composition, real ffmpeg render + ffprobe check, ledger, exact 90-day window math, resumable upload chunking/resume with mocked HTTP, CLI run loop with dedupe.
+`python -m pytest -q` — 39 tests: license gate, sentence splitter, grounding accept/reject cases, template writer invariants, Commons/OTD/APOD parsers with scripted HTTP, ASS timing, deterministic music, plate composition, real ffmpeg render + ffprobe check, ledger, exact 90-day window math, resumable upload chunking/resume with mocked HTTP, CLI run loop with dedupe.
