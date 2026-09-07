@@ -80,11 +80,29 @@ class Browser:
             args += ["--headless=new", "--disable-gpu"]
         if hasattr(os, "geteuid") and os.geteuid() == 0:
             args.append("--no-sandbox")  # Chromium refuses to start as root otherwise (containers, CI)
+        env = os.environ.copy()
+        if not self.headless and not env.get("DISPLAY") and not env.get("WAYLAND_DISPLAY"):
+            # started from a systemd user service, which does not inherit the desktop
+            # session's variables (Crostini's cros-garcon sets these for normal shells)
+            env["DISPLAY"] = ":0"
+            self.log("[browser] no DISPLAY/WAYLAND_DISPLAY in env; defaulting to DISPLAY=:0")
         self.log(f"[browser] starting {self.exe} (profile {self.profile_dir}, cdp {self.port})")
-        self.proc = subprocess.Popen(args, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, start_new_session=True)
+        self.proc = subprocess.Popen(args, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE, start_new_session=True, env=env)
         for _ in range(60):
             if cdp_alive(self.port):
                 return
+            rc = self.proc.poll()
+            if rc is not None:
+                err = ""
+                try:
+                    err = (self.proc.stderr.read() or b"").decode("utf-8", "replace")[-400:]
+                except Exception:
+                    pass
+                raise RuntimeError(
+                    f"{Path(self.exe).name} exited immediately (code {rc}). {err.strip()}\n"
+                    "If this says it cannot open a display: run `shortforge web` from a terminal "
+                    "instead of the background service, or start the ChromeOS Linux GUI first."
+                )
             time.sleep(0.5)
         raise RuntimeError("browser did not open its debugging port in 30s")
 
