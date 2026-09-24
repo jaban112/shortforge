@@ -1,0 +1,16 @@
+20:39:01 [web] http://127.0.0.1:8787
+20:51:12 [run] onthisday: 18 unused items
+20:51:14 [tts] kokoro loaded in 1.6s (voice=am_michael, speed=1.05)
+20:51:14 [run] produce failed otd:09-22:2014:602fb454b2: template script failed grounding gate (bug): names not in source: States'
+20:51:14 [writer] template: 76 words, 2 body sentences
+20:51:19 [tts] hook  2.71s (4.8s) On this day in 1993.
+20:51:29 [tts] body 16.22s (10.6s) A tugboat towing a barge collided with a rail bridge in Mobi
+20:51:33 [tts] body  8.58s (4.2s) A tugboat or tug is a marine vessel that manoeuvres other ve
+20:51:35 [tts] cta   3.68s (1.9s) Follow for one true story from history, every single day.
+20:51:35 [tts] total 33.07s
+20:51:39 [ffmpeg] ffmpeg -y -hide_banner -loglevel error -loop 1 -framerate …
+20:52:16 [run] rendered otd-09-22-1993-2b3e7e0004.mp4 (33.1s) — September 22, 1993: Tugboat #Shorts
+20:52:16 [browser] starting /usr/bin/chromium (profile /home/mg225111061/shortforge/state/chrome-profile, cdp 9333)
+20:52:17 [yt-web] opening upload dialog
+12:37:10 [web] http://127.0.0.1:8787
+12:43:37 [web] http://127.0.0.1:8787

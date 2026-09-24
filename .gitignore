@@ -9,3 +9,4 @@ __pycache__/
 shortforge-setup.html
 web/.build/
 web/sodium.bundle.js
+state/chrome-profile/
